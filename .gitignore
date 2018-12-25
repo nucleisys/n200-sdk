@@ -1,0 +1,10 @@
+*.o
+*.dump
+*.verilog
+*.a
+toolchain/
+work/
+shortcmd/
+*.log
+fpga_test4sim
+fpga_nuclei_test4sim
