@@ -4,7 +4,7 @@
 #include <unistd.h>
 
 #include "soc/drivers/soc.h"
-#include "n200/drivers/n200_func.h"
+#include "n22/drivers/n22_func.h"
 
 
 void uart_init(size_t baud_rate)

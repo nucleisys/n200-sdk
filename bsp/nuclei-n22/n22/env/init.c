@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/n200_func.h"
+#include "n22/drivers/riscv_encoding.h"
+#include "n22/drivers/n22_func.h"
 
 
   // Need to include the soc_init function, so need to include the soc_func.h here
@@ -24,7 +24,7 @@ void _init()
 
   
   write_csr(mtvec, &trap_entry);
-     // The N200 self-defined CSR (not standard RISC-V CSR) must use this function style
+     // The n22 self-defined CSR (not standard RISC-V CSR) must use this function style
   write_csr_mivec(&irq_entry);
   write_csr_mnvec(&nmi_entry);
 

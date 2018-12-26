@@ -4,7 +4,7 @@ ENTRY( _start )
 
 MEMORY
 {
-  iecm (rxai!w) : ORIGIN = 0x80000000, LENGTH = 64K
+  ilm (rxai!w) : ORIGIN = 0x80000000, LENGTH = 64K
   ram (wxa!ri) : ORIGIN = 0x90000000, LENGTH = 64K
 }
 
@@ -16,18 +16,18 @@ SECTIONS
   .init           :
   {
     KEEP (*(SORT_NONE(.init)))
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   .ilalign         :
   {
     . = ALIGN(4);
-    PROVIDE( _iecm_lma = . );
-  } >iecm AT>iecm 
+    PROVIDE( _ilm_lma = . );
+  } >ilm AT>ilm 
 
   .ialign         :
   {
-    PROVIDE( _iecm = . );
-  } >iecm AT>iecm 
+    PROVIDE( _ilm = . );
+  } >ilm AT>ilm 
 
   .text           :
   {
@@ -35,19 +35,19 @@ SECTIONS
     *(.text.startup .text.startup.*)
     *(.text .text.*)
     *(.gnu.linkonce.t.*)
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   .fini           :
   {
     KEEP (*(SORT_NONE(.fini)))
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   . = ALIGN(4);
 
   PROVIDE (__etext = .);
   PROVIDE (_etext = .);
   PROVIDE (etext = .);
-  PROVIDE( _eiecm = . );
+  PROVIDE( _eilm = . );
 
 
   .preinit_array  :
@@ -55,7 +55,7 @@ SECTIONS
     PROVIDE_HIDDEN (__preinit_array_start = .);
     KEEP (*(.preinit_array))
     PROVIDE_HIDDEN (__preinit_array_end = .);
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   .init_array     :
   {
@@ -63,7 +63,7 @@ SECTIONS
     KEEP (*(SORT_BY_INIT_PRIORITY(.init_array.*) SORT_BY_INIT_PRIORITY(.ctors.*)))
     KEEP (*(.init_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .ctors))
     PROVIDE_HIDDEN (__init_array_end = .);
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   .fini_array     :
   {
@@ -71,7 +71,7 @@ SECTIONS
     KEEP (*(SORT_BY_INIT_PRIORITY(.fini_array.*) SORT_BY_INIT_PRIORITY(.dtors.*)))
     KEEP (*(.fini_array EXCLUDE_FILE (*crtbegin.o *crtbegin?.o *crtend.o *crtend?.o ) .dtors))
     PROVIDE_HIDDEN (__fini_array_end = .);
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   .ctors          :
   {
@@ -93,7 +93,7 @@ SECTIONS
     KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .ctors))
     KEEP (*(SORT(.ctors.*)))
     KEEP (*(.ctors))
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   .dtors          :
   {
@@ -102,22 +102,22 @@ SECTIONS
     KEEP (*(EXCLUDE_FILE (*crtend.o *crtend?.o ) .dtors))
     KEEP (*(SORT(.dtors.*)))
     KEEP (*(.dtors))
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
     . = ALIGN(4);
-    PROVIDE( _eiecm = . );
+    PROVIDE( _eilm = . );
 
   .lalign         :
   {
     . = ALIGN(4);
     PROVIDE( _data_lma = . );
-  } >iecm AT>iecm 
+  } >ilm AT>ilm 
 
   .dalign         :
   {
     . = ALIGN(4);
     PROVIDE( _data = . );
-  } >ram AT>iecm 
+  } >ram AT>ilm 
 
   .data          :
   {
@@ -136,7 +136,7 @@ SECTIONS
     *(.srodata.cst4)
     *(.srodata.cst2)
     *(.srodata .srodata.*)
-  } >ram AT>iecm 
+  } >ram AT>ilm 
 
   . = ALIGN(4);
   PROVIDE( _edata = . );

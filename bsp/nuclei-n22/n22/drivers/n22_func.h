@@ -1,11 +1,12 @@
 // See LICENSE file for licence details
 
-#ifndef N200_FUNC_H
-#define N200_FUNC_H
+#ifndef N22_FUNC_H
+#define N22_FUNC_H
 
 __BEGIN_DECLS
 
-#include "n200/drivers/n200_pic_tmr.h"
+#include "n22/drivers/n22_tmr.h"
+#include "n22/drivers/n22_clic.h"
 
 void pmp_open_all_space();
 

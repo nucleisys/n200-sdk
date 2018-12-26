@@ -2,7 +2,7 @@
 
 // See LICENSE for license details.
 
-#include "n200/drivers/riscv_encoding.h"
+#include "n22/drivers/riscv_encoding.h"
 
 	.section .init
 	.globl _start
@@ -16,13 +16,16 @@ _start:
 .option pop
 	la sp, _sp
 
-    #csrrsi x0, 0xbfe, 0x8 // Disable I-Cache
+    csrr t0, mcause
+    // If it is not 0, then it is NMI, jump to NMI handler
+    bne t0, zero, nmi_handler
 
-	/* Bob: Load code section from flash to IECM */
-	la a0, _iecm_lma
-	la a1, _iecm
-    beq a0, a1, 2f  /*If the IECM phy-address same as the logic-address, then quit*/
-	la a2, _eiecm
+
+	/* Bob: Load code section from flash to ILM */
+	la a0, _ilm_lma
+	la a1, _ilm
+    beq a0, a1, 2f  /*If the ILM phy-address same as the logic-address, then quit*/
+	la a2, _eilm
 	bgeu a1, a2, 2f
 1:
 	lw t0, (a0)

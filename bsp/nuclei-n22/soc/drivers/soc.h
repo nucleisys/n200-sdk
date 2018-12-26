@@ -3,7 +3,7 @@
 #ifndef _NUCLEI_SOC_H
 #define _NUCLEI_SOC_H
 
-#include "n200/drivers/riscv_const.h"
+#include "n22/drivers/riscv_const.h"
 #include "soc/drivers/aon.h"
 #include "soc/drivers/gpio.h"
 #include "soc/drivers/pwm.h"

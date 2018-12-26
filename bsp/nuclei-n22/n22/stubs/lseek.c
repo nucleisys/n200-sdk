@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
-#include "n200/stubs/stub.h"
+#include "n22/stubs/stub.h"
 
 off_t _lseek(int fd, off_t ptr, int dir)
 {

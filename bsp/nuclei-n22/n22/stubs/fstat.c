@@ -3,7 +3,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include "n200/stubs/stub.h"
+#include "n22/stubs/stub.h"
 
 int _fstat(int fd, struct stat* st)
 {

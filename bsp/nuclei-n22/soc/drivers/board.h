@@ -23,4 +23,4 @@
 #define RTC_FREQ 32768
 
 
-#endif /* _NUCLEI_N200_H */
+#endif /* _NUCLEI_BOARD_H */

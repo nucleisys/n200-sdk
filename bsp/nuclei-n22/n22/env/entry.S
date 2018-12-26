@@ -3,9 +3,9 @@
 #ifndef ENTRY_S
 #define ENTRY_S
 
-#include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/riscv_bits.h"
-#include "n200/drivers/n200_pic_tmr.h"
+#include "n22/drivers/riscv_encoding.h"
+#include "n22/drivers/riscv_bits.h"
+#include "n22/drivers/n22_pic_tmr.h"
 
 
 

@@ -2,8 +2,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <unistd.h>
-#include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/n200_func.h"
+#include "n22/drivers/riscv_encoding.h"
+#include "n22/drivers/n22_func.h"
 
 __attribute__((weak)) uintptr_t handle_trap(uintptr_t mcause, uintptr_t sp)
 {

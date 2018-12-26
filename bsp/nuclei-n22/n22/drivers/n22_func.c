@@ -5,8 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/n200_func.h"
+#include "n22/drivers/riscv_encoding.h"
+#include "n22/drivers/n22_func.h"
 
     // Configure PMP to make all the address space accesable and executable
 void pmp_open_all_space(){

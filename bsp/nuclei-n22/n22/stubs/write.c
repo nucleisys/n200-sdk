@@ -6,7 +6,7 @@
 #include <sys/types.h>
 
 #include "soc/drivers/soc.h"
-#include "n200/stubs/stub.h"
+#include "n22/stubs/stub.h"
 
 ssize_t _write(int fd, const void* ptr, size_t len)
 {

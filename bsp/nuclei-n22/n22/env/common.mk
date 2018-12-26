@@ -8,49 +8,49 @@ all: $(TARGET)
 
 FLASHXIP    := flashxip
 FLASH       := flash
-IECM        := iecm
+ILM        := ilm
 DOWNLOAD    := flash
 
 SOC_DRIVER_DIR = $(BSP_BASE)/$(BOARD)/soc/drivers
 
-N200_DRIVER_DIR = $(BSP_BASE)/$(BOARD)/n200/drivers
-N200_ENV_DIR = $(BSP_BASE)/$(BOARD)/n200/env
-N200_STUB_DIR = $(BSP_BASE)/$(BOARD)/n200/stubs
+N22_DRIVER_DIR = $(BSP_BASE)/$(BOARD)/n22/drivers
+N22_ENV_DIR = $(BSP_BASE)/$(BOARD)/n22/env
+N22_STUB_DIR = $(BSP_BASE)/$(BOARD)/n22/stubs
 
    # The start-up assembly program
-ASM_SRCS += $(N200_ENV_DIR)/start.S
+ASM_SRCS += $(N22_ENV_DIR)/start.S
    # The system initilization program
-C_SRCS += $(N200_ENV_DIR)/init.c
+C_SRCS += $(N22_ENV_DIR)/init.c
    # The interrupt/exception/nmi entry program
-ASM_SRCS += $(N200_ENV_DIR)/entry.S
+ASM_SRCS += $(N22_ENV_DIR)/entry.S
    # The interrupt/exception/nmi handler program
-C_SRCS += $(N200_ENV_DIR)/handlers.c
+C_SRCS += $(N22_ENV_DIR)/handlers.c
    # The processor core common functions
-C_SRCS += $(N200_DRIVER_DIR)/n200_func.c
+C_SRCS += $(N22_DRIVER_DIR)/n22_func.c
    # The newlib stubs functions
-C_SRCS += $(N200_STUB_DIR)/_exit.c
-C_SRCS += $(N200_STUB_DIR)/write_hex.c
-C_SRCS += $(N200_STUB_DIR)/write.c
-C_SRCS += $(N200_STUB_DIR)/close.c
-C_SRCS += $(N200_STUB_DIR)/fstat.c
-C_SRCS += $(N200_STUB_DIR)/isatty.c
-C_SRCS += $(N200_STUB_DIR)/lseek.c
-C_SRCS += $(N200_STUB_DIR)/read.c
-C_SRCS += $(N200_STUB_DIR)/sbrk.c
+C_SRCS += $(N22_STUB_DIR)/_exit.c
+C_SRCS += $(N22_STUB_DIR)/write_hex.c
+C_SRCS += $(N22_STUB_DIR)/write.c
+C_SRCS += $(N22_STUB_DIR)/close.c
+C_SRCS += $(N22_STUB_DIR)/fstat.c
+C_SRCS += $(N22_STUB_DIR)/isatty.c
+C_SRCS += $(N22_STUB_DIR)/lseek.c
+C_SRCS += $(N22_STUB_DIR)/read.c
+C_SRCS += $(N22_STUB_DIR)/sbrk.c
 
    # The SoC common functions
 C_SRCS += $(SOC_DRIVER_DIR)/soc_func.c
 
 ifeq ($(DOWNLOAD),${FLASH}) 
-LINKER_SCRIPT := $(N200_ENV_DIR)/link_flash.lds
+LINKER_SCRIPT := $(N22_ENV_DIR)/link_flash.lds
 endif
 
-ifeq ($(DOWNLOAD),${IECM}) 
-LINKER_SCRIPT := $(N200_ENV_DIR)/link_iecm.lds
+ifeq ($(DOWNLOAD),${ILM}) 
+LINKER_SCRIPT := $(N22_ENV_DIR)/link_ilm.lds
 endif
 
 ifeq ($(DOWNLOAD),${FLASHXIP}) 
-LINKER_SCRIPT := $(N200_ENV_DIR)/link_flashxip.lds
+LINKER_SCRIPT := $(N22_ENV_DIR)/link_flashxip.lds
 endif
 
 INCLUDES += -I$(BSP_BASE)/$(BOARD)
@@ -63,7 +63,7 @@ LDFLAGS += -u _printf_float
 endif
 
 
-LDFLAGS += -L$(N200_ENV_DIR)
+LDFLAGS += -L$(N22_ENV_DIR)
 
 ASM_OBJS := $(ASM_SRCS:.S=.o)
 C_OBJS := $(C_SRCS:.c=.o)

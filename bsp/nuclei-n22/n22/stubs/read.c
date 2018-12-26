@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 
-#include "n200/stubs/stub.h"
+#include "n22/stubs/stub.h"
 
 ssize_t _read(int fd, void* ptr, size_t len)
 {

@@ -15,59 +15,30 @@ SIMTEST     := 0
 
 FLASHXIP    := flashxip
 FLASH       := flash
-ITCM        := itcm
-IECM        := iecm
+ILM         := ilm
 DOWNLOAD    := ${FLASH}
 
 OCDCFG := hbird
-FTDI   := ftdi
 HBIRD  := hbird
 OLMX   := olmx
 
 
 
-N201        := n201
-N203        := n203
-N205        := n205
-N205F       := n205f
-N205FD      := n205fd
+ISA         := IMAC
 
-CORE        := n205
 
-CORE_NAME = $(shell echo $(CORE) | tr a-z A-Z)
-core_name = $(shell echo $(CORE) | tr A-Z a-z)
+ISA_STRING = $(shell echo $(ISA) | tr a-z A-Z)
+isa_string = $(shell echo $(ISA) | tr A-Z a-z)
 
 NANO_PFLOAT     := 1
 
 
-ifeq ($(core_name),${N201}) 
-RISCV_ARCH := rv32iac
+RISCV_ARCH := rv32${isa_string}
 RISCV_ABI  := ilp32
-endif
-
-ifeq ($(core_name),${N203}) 
-RISCV_ARCH := rv32imac
-RISCV_ABI  := ilp32
-endif
-
-ifeq ($(core_name),${N205}) 
-RISCV_ARCH := rv32imac
-RISCV_ABI  := ilp32
-endif
-
-ifeq ($(core_name),${N207F}) 
-RISCV_ARCH := rv32imafc
-RISCV_ABI  := ilp32f
-endif
-
-ifeq ($(core_name),${N207FD}) 
-RISCV_ARCH := rv32imafdc
-RISCV_ABI  := ilp32f
-endif
 
 
 # Default target
-BOARD ?= nuclei-n200
+BOARD ?= nuclei-n22
 PROGRAM ?= demo_pic
 GDB_PORT ?= 3333
 
@@ -253,13 +224,10 @@ dasm: software
 #############################################################
 OPENOCD_UPLOAD = bsp/${BOARD}/tools/openocd_upload.sh
 ifeq ($(OCDCFG),${OLMX})
-OPENOCDCFG ?= bsp/$(BOARD)/n200/env/openocd_olmx.cfg
-endif
-ifeq ($(OCDCFG),${FTDI})
-OPENOCDCFG ?= bsp/$(BOARD)/n200/env/openocd_ftdi.cfg
+OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_olmx.cfg
 endif
 ifeq ($(OCDCFG),${HBIRD})
-OPENOCDCFG ?= bsp/$(BOARD)/n200/env/openocd_hbird.cfg
+OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_hbird.cfg
 endif
 OPENOCDARGS += -f $(OPENOCDCFG)
 

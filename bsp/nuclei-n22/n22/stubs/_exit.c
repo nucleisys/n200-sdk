@@ -2,7 +2,7 @@
 
 #include <unistd.h>
 
-#include "n200/stubs/stub.h"
+#include "n22/stubs/stub.h"
 
 
 void _exit(int code)
