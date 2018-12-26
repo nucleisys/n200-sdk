@@ -877,100 +877,16 @@
 #define CSR_MHPMCOUNTER30H 0xb9e
 #define CSR_MHPMCOUNTER31H 0xb9f
 
-// N200 added CSR
-#define CSR_MCOUNTERSTOP 0xBFF 
-#define CSR_ISTATUS      0x310 
-#define CSR_NSTATUS      0x311 
-#define CSR_MIVEC        0x312 
-#define CSR_MNVEC        0x313 
-#define CSR_MSUBMODE     0x314 
-#define CSR_MSCRATCH1    0x350 
-#define CSR_MNPC         0x351 
-#define CSR_MIPC         0x352 
-#define CSR_DBGSTOP      0xBFC 
-#define CSR_WFIMODE      0xBFB 
-#define CSR_TXEVT        0xBFA 
-#define CSR_WFE          0xBF9 
 
-#define MSTATUS_MPS         0x00000600
-   // MSTATUS_MPS_LSB is to indicate the least bit of MPS field
-#define MSTATUS_MPS_LSB     9
+#define CSR_MTVT               0x307
+#define CSR_MNXTI              0x345
 
-   // To indicate the submode encoding
-#define MSUBMODE_RGLR    0x0
-#define MSUBMODE_EXCP    0x1
-#define MSUBMODE_NMI     0x2
-#define MSUBMODE_IRQ     0x3
+#define CSR_MTVT2              0x7FC
+#define CSR_JLMNXTI            0x7FD
+#define CSR_PUSHCAUSE          0x7FE
+#define CSR_PUSHMEPC           0x7FF
 
-#define read_csr_mcounterstop read_csr(0xBFF)
-#define read_csr_istatus      read_csr(0x310)
-#define read_csr_nstatus      read_csr(0x311)
-#define read_csr_mivec        read_csr(0x312)
-#define read_csr_mnvec        read_csr(0x313)
-#define read_csr_msubmode     read_csr(0x314)
-#define read_csr_mscratch1    read_csr(0x350)
-#define read_csr_mnpc         read_csr(0x351)
-#define read_csr_mipc         read_csr(0x352)
-#define read_csr_dbgstop      read_csr(0xBFC)
-#define read_csr_wfimode      read_csr(0xBFB)
-#define read_csr_txevt        read_csr(0xBFA)
-#define read_csr_wfe          read_csr(0xBF9)
 
-#define write_csr_mcounterstop(x) write_csr(0xBFF,x)
-#define write_csr_istatus(x)      write_csr(0x310,x)
-#define write_csr_nstatus(x)      write_csr(0x311,x)
-#define write_csr_mivec(x)        write_csr(0x312,x)
-#define write_csr_mnvec(x)        write_csr(0x313,x)
-#define write_csr_msubmode(x)     write_csr(0x314,x)
-#define write_csr_mscratch1(x)    write_csr(0x350,x)
-#define write_csr_mnpc(x)         write_csr(0x351,x)
-#define write_csr_mipc(x)         write_csr(0x352,x)
-#define write_csr_dbgstop(x)      write_csr(0xBFC,x)
-#define write_csr_wfimode(x)      write_csr(0xBFB,x)
-#define write_csr_txevt(x)        write_csr(0xBFA,x)
-#define write_csr_wfe(x)          write_csr(0xBF9,x)
-
-#define swap_csr_mcounterstop(x) swap_csr(0xBFF,x)
-#define swap_csr_istatus(x)      swap_csr(0x310,x)
-#define swap_csr_nstatus(x)      swap_csr(0x311,x)
-#define swap_csr_mivec(x)        swap_csr(0x312,x)
-#define swap_csr_mnvec(x)        swap_csr(0x313,x)
-#define swap_csr_msubmode(x)     swap_csr(0x314,x)
-#define swap_csr_mscratch1(x)    swap_csr(0x350,x)
-#define swap_csr_mnpc(x)         swap_csr(0x351,x)
-#define swap_csr_mipc(x)         swap_csr(0x352,x)
-#define swap_csr_dbgstop(x)      swap_csr(0xBFC,x)
-#define swap_csr_wfimode(x)      swap_csr(0xBFB,x)
-#define swap_csr_txevt(x)        swap_csr(0xBFA,x)
-#define swap_csr_wfe(x)          swap_csr(0xBF9,x)
-
-#define set_csr_mcounterstop(x) set_csr(0xBFF,x)
-#define set_csr_istatus(x)      set_csr(0x310,x)
-#define set_csr_nstatus(x)      set_csr(0x311,x)
-#define set_csr_mivec(x)        set_csr(0x312,x)
-#define set_csr_mnvec(x)        set_csr(0x313,x)
-#define set_csr_msubmode(x)     set_csr(0x314,x)
-#define set_csr_mscratch1(x)    set_csr(0x350,x)
-#define set_csr_mnpc(x)         set_csr(0x351,x)
-#define set_csr_mipc(x)         set_csr(0x352,x)
-#define set_csr_dbgstop(x)      set_csr(0xBFC,x)
-#define set_csr_wfimode(x)      set_csr(0xBFB,x)
-#define set_csr_txevt(x)        set_csr(0xBFA,x)
-#define set_csr_wfe(x)          set_csr(0xBF9,x)
-
-#define clear_csr_mcounterstop(x) clear_csr(0xBFF,x)
-#define clear_csr_istatus(x)      clear_csr(0x310,x)
-#define clear_csr_nstatus(x)      clear_csr(0x311,x)
-#define clear_csr_mivec(x)        clear_csr(0x312,x)
-#define clear_csr_mnvec(x)        clear_csr(0x313,x)
-#define clear_csr_msubmode(x)     clear_csr(0x314,x)
-#define clear_csr_mscratch1(x)    clear_csr(0x350,x)
-#define clear_csr_mnpc(x)         clear_csr(0x351,x)
-#define clear_csr_mipc(x)         clear_csr(0x352,x)
-#define clear_csr_dbgstop(x)      clear_csr(0xBFC,x)
-#define clear_csr_wfimode(x)      clear_csr(0xBFB,x)
-#define clear_csr_txevt(x)        clear_csr(0xBFA,x)
-#define clear_csr_wfe(x)          clear_csr(0xBF9,x)
 
 
 

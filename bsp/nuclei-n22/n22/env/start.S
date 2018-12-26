@@ -16,9 +16,12 @@ _start:
 .option pop
 	la sp, _sp
 
+    // Check mcause, If it is not 0, then it is NMI, jump to NMI handler
     csrr t0, mcause
-    // If it is not 0, then it is NMI, jump to NMI handler
-    bne t0, zero, nmi_handler
+    beq t0, zero, 1f // If it is 0, then from reset, just bypass the NMI jumping
+    la t0, nmi_entry
+    jr t0
+1:
 
 
 	/* Bob: Load code section from flash to ILM */
@@ -57,6 +60,8 @@ _start:
 	addi a0, a0, 4
 	bltu a0, a1, 1b
 2:
+
+	/* Intial the mtvec/mtvt/mtvt2 TODO */
 
 	/* Call global constructors */
 	la a0, __libc_fini_array

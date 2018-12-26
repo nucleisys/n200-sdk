@@ -10,24 +10,11 @@
   // Need to include the soc_init function, so need to include the soc_func.h here
 #include "soc/drivers/soc_func.h"
 
-extern void trap_entry();
-extern void nmi_entry();
-extern void irq_entry();
-
-
-
 
 void _init()
 {
   #ifndef NO_INIT
   soc_init();
-
-  
-  write_csr(mtvec, &trap_entry);
-     // The n22 self-defined CSR (not standard RISC-V CSR) must use this function style
-  write_csr_mivec(&irq_entry);
-  write_csr_mnvec(&nmi_entry);
-
 
   printf("Core freq at %d Hz\n", get_cpu_freq());
 

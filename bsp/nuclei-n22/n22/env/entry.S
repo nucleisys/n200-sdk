@@ -5,7 +5,8 @@
 
 #include "n22/drivers/riscv_encoding.h"
 #include "n22/drivers/riscv_bits.h"
-#include "n22/drivers/n22_pic_tmr.h"
+#include "n22/drivers/n22_clic.h"
+#include "n22/drivers/n22_tmr.h"
 
 
 
@@ -78,49 +79,6 @@
   csrw CSR_MSTATUS, x5  
 .endm
 
-###############################################
-###############################################
-# Save the mipc and istatus
-#
-.macro SAVE_MIPC_ISTATUS
-  csrr x5, CSR_MIPC  
-  STORE x5,  16*REGBYTES(sp)
-  csrr x5, CSR_ISTATUS  
-  STORE x5,  17*REGBYTES(sp)
-.endm
-
-###############################################
-###############################################
-# Restore the mipc and istatus
-#
-.macro RESTORE_MIPC_ISTATUS
-  LOAD x5,  16*REGBYTES(sp)
-  csrw CSR_MIPC, x5  
-  LOAD x5,  17*REGBYTES(sp)
-  csrw CSR_ISTATUS, x5  
-.endm
-
-###############################################
-###############################################
-# Save the mnpc and nstatus
-#
-.macro SAVE_MNPC_NSTATUS
-  csrr x5, CSR_MNPC  
-  STORE x5,  16*REGBYTES(sp)
-  csrr x5, CSR_NSTATUS  
-  STORE x5,  17*REGBYTES(sp)
-.endm
-
-###############################################
-###############################################
-# Restore the mnpc and nstatus
-#
-.macro RESTORE_MNPC_NSTATUS
-  LOAD x5,  16*REGBYTES(sp)
-  csrw CSR_MNPC, x5  
-  LOAD x5,  17*REGBYTES(sp)
-  csrw CSR_NSTATUS, x5  
-.endm
 
 ###############################################
 ###############################################
@@ -180,42 +138,42 @@ trap_entry:
   .global irq_entry
 .weak irq_entry
 irq_entry:
-  // Allocate the stack space
-  addi sp, sp, -18*REGBYTES
-
-  // Save the caller saving registers (context)
-  SAVE_CONTEXT
-  // Save the MIPC/IStatus reg
-  SAVE_MIPC_ISTATUS
-
-call_irq:
-  //Claim the IRQ
-  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
-  lw a0, 0(t0)
-
-  // Call the handler function
-  // a0 as the function argument
-  call handle_irq
-
-  //Complete the IRQ
-  // a0 as the return value
-  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
-  sw a0, 0(t0)
-
-
-  // Check if there is pending irq to support interrupt tailing
-  li x5, (PIC_CTRL_ADDR + PIC_EIP_OFFSET)// Use t0(x5) as the address register
-  lw x5, 0(x5)// Read the value from PIC EIP reg
-  bnez x5, call_irq // If the EIP reg is not zero, means there is a pending register
-
-  // Restore the MIPC/IStatus reg
-  RESTORE_MIPC_ISTATUS
-  // Restore the caller saving registers (context)
-  RESTORE_CONTEXT
-
-  // De-allocate the stack space
-  addi sp, sp, 18*REGBYTES
-  // Return to regular code
+//TODO  // Allocate the stack space
+//TODO  addi sp, sp, -18*REGBYTES
+//TODO
+//TODO  // Save the caller saving registers (context)
+//TODO  SAVE_CONTEXT
+//TODO  // Save the MIPC/IStatus reg
+//TODO  SAVE_MIPC_ISTATUS
+//TODO
+//TODOcall_irq:
+//TODO  //Claim the IRQ
+//TODO  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
+//TODO  lw a0, 0(t0)
+//TODO
+//TODO  // Call the handler function
+//TODO  // a0 as the function argument
+//TODO  call handle_irq
+//TODO
+//TODO  //Complete the IRQ
+//TODO  // a0 as the return value
+//TODO  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
+//TODO  sw a0, 0(t0)
+//TODO
+//TODO
+//TODO  // Check if there is pending irq to support interrupt tailing
+//TODO  li x5, (PIC_CTRL_ADDR + PIC_EIP_OFFSET)// Use t0(x5) as the address register
+//TODO  lw x5, 0(x5)// Read the value from PIC EIP reg
+//TODO  bnez x5, call_irq // If the EIP reg is not zero, means there is a pending register
+//TODO
+//TODO  // Restore the MIPC/IStatus reg
+//TODO  RESTORE_MIPC_ISTATUS
+//TODO  // Restore the caller saving registers (context)
+//TODO  RESTORE_CONTEXT
+//TODO
+//TODO  // De-allocate the stack space
+//TODO  addi sp, sp, 18*REGBYTES
+//TODO  // Return to regular code
   mret
 
 ###############################################
@@ -227,25 +185,25 @@ call_irq:
   .global nmi_entry
 .weak nmi_entry
 nmi_entry:
-  // Allocate the stack space
-  addi sp, sp, -18*REGBYTES
+  //TODO // Allocate the stack space
+  //TODO addi sp, sp, -18*REGBYTES
 
-  // Save the caller saving registers (context)
-  SAVE_CONTEXT
-  // Save the MNPC/NStatus reg
-  SAVE_MNPC_NSTATUS
+  //TODO // Save the caller saving registers (context)
+  //TODO SAVE_CONTEXT
+  //TODO // Save the MNPC/NStatus reg
+  //TODO SAVE_MNPC_NSTATUS
 
-     // Call the function
-  call handle_nmi
+  //TODO    // Call the function
+  //TODO call handle_nmi
 
-  // Restore the MNPC/NStatus reg
-  RESTORE_MNPC_NSTATUS
-  // Restore the caller saving registers (context)
-  RESTORE_CONTEXT
+  //TODO // Restore the MNPC/NStatus reg
+  //TODO RESTORE_MNPC_NSTATUS
+  //TODO // Restore the caller saving registers (context)
+  //TODO RESTORE_CONTEXT
 
-  // De-allocate the stack space
-  addi sp, sp, 18*REGBYTES
-  // Return to regular code
+  //TODO // De-allocate the stack space
+  //TODO addi sp, sp, 18*REGBYTES
+  //TODO // Return to regular code
   mret
 
 
