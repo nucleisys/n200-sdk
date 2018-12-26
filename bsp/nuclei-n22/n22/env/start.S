@@ -16,12 +16,12 @@ _start:
 .option pop
 	la sp, _sp
 
-    // Check mcause, If it is not 0, then it is NMI, jump to NMI handler
-    csrr t0, mcause
-    beq t0, zero, 1f // If it is 0, then from reset, just bypass the NMI jumping
-    la t0, nmi_entry
-    jr t0
-1:
+//TODO    // Check mcause, If it is not 0, then it is NMI, jump to NMI handler
+//TODO    csrr t0, mcause
+//TODO    beq t0, zero, 1f // If it is 0, then from reset, just bypass the NMI jumping
+//TODO    la t0, nmi_entry
+//TODO    jr t0
+//TODO1:
 
 
 	/* Bob: Load code section from flash to ILM */

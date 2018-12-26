@@ -224,11 +224,21 @@ dasm: software
 #############################################################
 OPENOCD_UPLOAD = bsp/${BOARD}/tools/openocd_upload.sh
 ifeq ($(OCDCFG),${OLMX})
+ifeq ($(DOWNLOAD),${ILM})
+OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_olmx_ilm.cfg
+else
 OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_olmx.cfg
 endif
+endif
+
 ifeq ($(OCDCFG),${HBIRD})
+ifeq ($(DOWNLOAD),${ILM})
+OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_hbird_ilm.cfg
+else
 OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_hbird.cfg
 endif
+endif
+
 OPENOCDARGS += -f $(OPENOCDCFG)
 
 GDB_UPLOAD_ARGS ?= --batch
