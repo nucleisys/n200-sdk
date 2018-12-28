@@ -881,6 +881,8 @@
 #define CSR_MTVT               0x307
 #define CSR_MNXTI              0x345
 
+#define CSR_MNVEC              0x7C3
+
 #define CSR_MTVT2              0x7FC
 #define CSR_JLMNXTI            0x7FD
 #define CSR_PUSHCAUSE          0x7FE

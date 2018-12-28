@@ -9,20 +9,11 @@
 	.type _start,@function
 
 _start:
-	csrc mstatus, MSTATUS_MIE  //Disable the interrupt globally
 .option push
 .option norelax
 	la gp, __global_pointer$
 .option pop
 	la sp, _sp
-
-//TODO    // Check mcause, If it is not 0, then it is NMI, jump to NMI handler
-//TODO    csrr t0, mcause
-//TODO    beq t0, zero, 1f // If it is 0, then from reset, just bypass the NMI jumping
-//TODO    la t0, nmi_entry
-//TODO    jr t0
-//TODO1:
-
 
 	/* Bob: Load code section from flash to ILM */
 	la a0, _ilm_lma
@@ -61,7 +52,16 @@ _start:
 	bltu a0, a1, 1b
 2:
 
-	/* Intial the mtvec/mtvt/mtvt2 TODO */
+	/* Intial the mnvec/mtvt/mtvt2*/
+    la t0, _start
+    csrw CSR_MTVT, t0
+    la t0, nmi_entry
+    csrw CSR_MNVEC, t0
+    la t0, irq_entry
+    csrw CSR_MTVT2, t0
+	/* Intial the mtvec with CLIC mode*/
+    la t0, trap_entry
+    csrw CSR_MTVEC, t0
 
 	/* Call global constructors */
 	la a0, __libc_fini_array

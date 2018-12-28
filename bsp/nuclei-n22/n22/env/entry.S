@@ -80,28 +80,13 @@
 .endm
 
 
-###############################################
-###############################################
-# Disable Interrupt
-#
-.macro DISABLE_MIE
-  csrc CSR_MSTATUS, MSTATUS_MIE  
-.endm
-
-###############################################
-###############################################
-# Enable Interrupt
-#
-.macro ENABLE_MIE
-  csrs CSR_MSTATUS, MSTATUS_MIE  
-.endm
 
 ###############################################
 ###############################################
 // Trap entry point
 //
   .section      .text.trap	
-  .align 2
+  .align 6// In CLIC mode, the trap entry must be 64bytes aligned
   .global trap_entry
 .weak trap_entry
 trap_entry:
@@ -138,42 +123,35 @@ trap_entry:
   .global irq_entry
 .weak irq_entry
 irq_entry:
-//TODO  // Allocate the stack space
-//TODO  addi sp, sp, -18*REGBYTES
-//TODO
-//TODO  // Save the caller saving registers (context)
-//TODO  SAVE_CONTEXT
-//TODO  // Save the MIPC/IStatus reg
-//TODO  SAVE_MIPC_ISTATUS
-//TODO
-//TODOcall_irq:
-//TODO  //Claim the IRQ
-//TODO  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
-//TODO  lw a0, 0(t0)
-//TODO
-//TODO  // Call the handler function
-//TODO  // a0 as the function argument
-//TODO  call handle_irq
-//TODO
-//TODO  //Complete the IRQ
-//TODO  // a0 as the return value
-//TODO  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
-//TODO  sw a0, 0(t0)
-//TODO
-//TODO
-//TODO  // Check if there is pending irq to support interrupt tailing
-//TODO  li x5, (PIC_CTRL_ADDR + PIC_EIP_OFFSET)// Use t0(x5) as the address register
-//TODO  lw x5, 0(x5)// Read the value from PIC EIP reg
-//TODO  bnez x5, call_irq // If the EIP reg is not zero, means there is a pending register
-//TODO
-//TODO  // Restore the MIPC/IStatus reg
-//TODO  RESTORE_MIPC_ISTATUS
-//TODO  // Restore the caller saving registers (context)
-//TODO  RESTORE_CONTEXT
-//TODO
-//TODO  // De-allocate the stack space
-//TODO  addi sp, sp, 18*REGBYTES
-//TODO  // Return to regular code
+  // Allocate the stack space
+  addi sp, sp, -18*REGBYTES
+
+  SAVE_CONTEXT// Save 16 regs
+
+  //------This special CSR read operation, which is actually use mcause as operand to directly store it to memory
+  csrrwi  x0, CSR_PUSHCAUSE, 16
+  //------This special CSR read operation, which is actually use mepc as operand to directly store it to memory
+  csrrwi  x0, CSR_PUSHMEPC, 17
+ 
+service_loop:
+  //------This special CSR read/write operation, which is actually Claim the CLIC to find its pending highest
+  // ID, if the ID is not 0, then automatically enable the mstatus.MIE, and jump to its vector-entry-label, and
+  // update the link register 
+  csrrw ra, CSR_JLMNXTI, ra 
+  
+  csrr a0, CSR_MNXTI   # Check any pending interrupt at level > mcause.pil
+  bnez a0, service_loop   # Loop to service any interrupt.
+ 
+  LOAD x5,  17*REGBYTES(sp)
+  csrw CSR_MEPC, x5  
+  LOAD x5,  16*REGBYTES(sp)
+  csrw CSR_MCAUSE, x5  
+
+  RESTORE_CONTEXT
+
+  // De-allocate the stack space
+  addi sp, sp, 18*REGBYTES
+  // Return to regular code
   mret
 
 ###############################################
@@ -185,25 +163,25 @@ irq_entry:
   .global nmi_entry
 .weak nmi_entry
 nmi_entry:
-  //TODO // Allocate the stack space
-  //TODO addi sp, sp, -18*REGBYTES
+  // Allocate the stack space
+  addi sp, sp, -18*REGBYTES
 
-  //TODO // Save the caller saving registers (context)
-  //TODO SAVE_CONTEXT
-  //TODO // Save the MNPC/NStatus reg
-  //TODO SAVE_MNPC_NSTATUS
+  // Save the caller saving registers (context)
+  SAVE_CONTEXT
+  // Save the MEPC/NStatus reg
+  SAVE_MEPC_MSTATUS
 
-  //TODO    // Call the function
-  //TODO call handle_nmi
+     // Call the function
+  call handle_nmi
 
-  //TODO // Restore the MNPC/NStatus reg
-  //TODO RESTORE_MNPC_NSTATUS
-  //TODO // Restore the caller saving registers (context)
-  //TODO RESTORE_CONTEXT
+  // Restore the MEPC/NStatus reg
+  RESTORE_MEPC_MSTATUS
+  // Restore the caller saving registers (context)
+  RESTORE_CONTEXT
 
-  //TODO // De-allocate the stack space
-  //TODO addi sp, sp, 18*REGBYTES
-  //TODO // Return to regular code
+  // De-allocate the stack space
+  addi sp, sp, 18*REGBYTES
+  // Return to regular code
   mret
 
 
