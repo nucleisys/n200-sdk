@@ -18,9 +18,8 @@
  * Platform definitions
  *****************************************************************************/
 
-#define TRAPVEC_TABLE_CTRL_ADDR _AC(0x00001010,UL)
 
-#define SOC_PIC_CTRL_ADDR       _AC(0x0C000000,UL)
+#define SOC_CLIC_CTRL_ADDR      _AC(0x0C000000,UL)
 #define SOC_TMR_CTRL_ADDR       _AC(0x02000000,UL)
 #define AON_CTRL_ADDR           _AC(0x10000000,UL)
 #define GPIO_CTRL_ADDR          _AC(0x10012000,UL)
@@ -79,22 +78,22 @@
 #define IOF1_PWM2_MASK          _AC(0x00003C00, UL)
 
 // Interrupt Numbers
-#define SOC_PIC_NUM_INTERRUPTS 54
+#define SOC_CLIC_NUM_INTERRUPTS 52
 
 
-#define SOC_PIC_INT_WDOGCMP     3
-#define SOC_PIC_INT_RTCCMP      4
-#define SOC_PIC_INT_UART0_BASE  5
-#define SOC_PIC_INT_UART1_BASE  6
-#define SOC_PIC_INT_SPI0_BASE   7
-#define SOC_PIC_INT_SPI1_BASE   8
-#define SOC_PIC_INT_SPI2_BASE   9
-#define SOC_PIC_INT_GPIO_BASE   10
+#define SOC_CLIC_INT_WDOGCMP     0
+#define SOC_CLIC_INT_RTCCMP      1
+#define SOC_CLIC_INT_UART0_BASE  2
+#define SOC_CLIC_INT_UART1_BASE  3
+#define SOC_CLIC_INT_SPI0_BASE   4
+#define SOC_CLIC_INT_SPI1_BASE   5
+#define SOC_CLIC_INT_SPI2_BASE   6
+#define SOC_CLIC_INT_GPIO_BASE   7
 
-#define SOC_PIC_INT_PWM0_BASE   42
-#define SOC_PIC_INT_PWM1_BASE   46
-#define SOC_PIC_INT_PWM2_BASE   50
-#define SOC_PIC_INT_I2C_BASE    54
+#define SOC_CLIC_INT_PWM0_BASE   39
+#define SOC_CLIC_INT_PWM1_BASE   43
+#define SOC_CLIC_INT_PWM2_BASE   47
+#define SOC_CLIC_INT_I2C_BASE    51
 
 // The TMR frequency is just the RTC frequency
 #define SOC_TMR_FREQ RTC_FREQ

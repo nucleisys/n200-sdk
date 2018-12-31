@@ -39,7 +39,7 @@ RISCV_ABI  := ilp32
 
 # Default target
 BOARD ?= nuclei-n22
-PROGRAM ?= demo_pic
+PROGRAM ?= dhrystone
 GDB_PORT ?= 3333
 
 # Variables the user probably shouldn't override.

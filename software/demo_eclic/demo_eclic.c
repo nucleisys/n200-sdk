@@ -7,17 +7,24 @@
 
 #include "stdatomic.h"
 
-#include "n200/drivers/n200_func.h"
+#include "n22/drivers/n22_func.h"
 #include "soc/drivers/soc.h"
 #include "soc/drivers/board.h"
-#include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/n200_pic_tmr.h"
+#include "n22/drivers/riscv_encoding.h"
+#include "n22/drivers/n22_tmr.h"
+#include "n22/drivers/n22_clic.h"
 
 #define BUTTON_1_GPIO_OFFSET 30
 #define BUTTON_2_GPIO_OFFSET 31
 
-#define PIC_INT_DEVICE_BUTTON_1 (SOC_PIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
-#define PIC_INT_DEVICE_BUTTON_2 (SOC_PIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
+   //SOC_CLIC_INT_GPIO_BASE   7
+   // #define CLIC_INT_DEVICE_BUTTON_1 (SOC_CLIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
+   // #define CLIC_INT_DEVICE_BUTTON_2 (SOC_CLIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
+#define CLIC_INT_DEVICE_BUTTON_1 37
+#define CLIC_INT_DEVICE_BUTTON_2 38
+
+#define BUTTON_1_HANDLER clic_irq37_handler
+#define BUTTON_2_HANDLER clic_irq38_handler
 
 
 void reset_demo (void);
@@ -45,10 +52,9 @@ void wait_seconds(size_t n)
 
 
 /*Entry Point for Machine Timer Interrupt Handler*/
-void handle_m_time_interrupt(){
+void MTIME_HANDLER(){
 
   printf ("%s","Begin mtime handler\n");
-  printf("\nIn mtime handler, the msubmode is 0x%x\n", read_csr_msubmode);
   GPIO_REG(GPIO_OUTPUT_VAL) ^= (0x1 << RED_LED_GPIO_OFFSET);
 
   volatile uint64_t * mtime       = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIME);
@@ -62,6 +68,8 @@ void handle_m_time_interrupt(){
   printf ("%s","End mtime handler\n");
 
 }
+
+
 
 static void _putc(char c) {
   while ((int32_t) UART0_REG(UART_REG_TXFIFO) < 0);
@@ -104,7 +112,7 @@ This is printf function printed:  \n\
 
 
 
-void button_1_handler(void) {
+void BUTTON_1_HANDLER(void) {
 
   printf ("%s","----Begin button1 handler\n");
 
@@ -120,7 +128,7 @@ void button_1_handler(void) {
 };
 
 
-void button_2_handler(void) {
+void BUTTON_2_HANDLER(void) {
 
   printf ("%s","--------Begin button2 handler\n");
 
@@ -135,39 +143,30 @@ void button_2_handler(void) {
 
 };
 
-void register_pic_irqs (){
-
-  for (int ii = 0; ii < PIC_NUM_INTERRUPTS; ii ++){
-    pic_interrupt_handlers[ii] = no_interrupt_handler;
-  }
-
-  pic_interrupt_handlers[PIC_INT_TMR] = handle_m_time_interrupt;
-  pic_interrupt_handlers[PIC_INT_DEVICE_BUTTON_1] = button_1_handler;
-  pic_interrupt_handlers[PIC_INT_DEVICE_BUTTON_2] = button_2_handler;
-
+void config_clic_irqs (){
 
   // Have to enable the interrupt both at the GPIO level,
-  // and at the PIC level.
-  pic_enable_interrupt (PIC_INT_TMR);
-  pic_enable_interrupt (PIC_INT_DEVICE_BUTTON_1);
-  pic_enable_interrupt (PIC_INT_DEVICE_BUTTON_2);
+  // and at the CLIC level.
+  clic_enable_interrupt (CLIC_INT_TMR);
+  clic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_1);
+  clic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_2);
 
-  // Priority must be set > 0 to trigger the interrupt.
-  //  The button have higher priority
-  pic_set_priority(PIC_INT_TMR, 1);
-  pic_set_priority(PIC_INT_DEVICE_BUTTON_1, 2);
-  pic_set_priority(PIC_INT_DEVICE_BUTTON_2, 3);
+  clic_set_nlbits(4);
+  //  The button have higher level
+  clic_set_int_level(CLIC_INT_TMR, 1);
+  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_1, 2);
+  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_2, 3);
 
  } 
 
 
 void setup_mtime (){
 
-    // Set the machine timer to go off in 3 seconds.
+    // Set the machine timer to go off in 2 seconds.
     volatile uint64_t * mtime    = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIME);
     volatile uint64_t * mtimecmp = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIMECMP);
     uint64_t now = *mtime;
-    uint64_t then = now + 5 * TMR_FREQ;
+    uint64_t then = now + 2 * TMR_FREQ;
     *mtimecmp = then;
 
 }
@@ -197,10 +196,7 @@ int main(int argc, char **argv)
   // Print the message
   printf ("%s",printf_instructions_msg);
 
-  //uint32_t mstatus_mps_bits = ((read_csr(mstatus) & MSTATUS_MPS) >> MSTATUS_MPS_LSB);
   //printf("\nIn main function, the mstatus is 0x%x\n", read_csr(mstatus));
-  //printf("\nIn main function, the msubmode is 0x%x\n", read_csr_msubmode);
-  //printf("\nIn main function, the mstatus.MPS is 0x%x\n", mstatus_mps_bits);
 
 
   printf ("%s","\nPlease enter any letter from keyboard to continue!\n");
@@ -221,7 +217,7 @@ int main(int argc, char **argv)
 
 
 
-  register_pic_irqs();
+  config_clic_irqs();
 
   setup_mtime();
 

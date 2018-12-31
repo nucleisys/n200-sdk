@@ -114,85 +114,146 @@ uint32_t get_cpu_freq()
 // Note that there are no assertions or bounds checking on these
 // parameter values.
 
-void pic_set_threshold (
-			 uint32_t threshold){
 
-  volatile uint32_t* threshold_ptr = (uint32_t*) (PIC_CTRL_ADDR +
-                                                              PIC_THRESHOLD_OFFSET
-                                                              );
 
-  *threshold_ptr = threshold;
-
-}
   
+void clic_init ( uint32_t num_irq )
+{
 
-void pic_enable_interrupt (uint32_t source){
+  //clear cfg register 
+  *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_CFG_OFFSET)=0;
 
-  volatile uint32_t * current_ptr = (volatile uint32_t *)(PIC_CTRL_ADDR +
-                                                        PIC_ENABLE_OFFSET +
-                                                        ((source >> 3) & (~0x3))//Source number divide 32 and then multip 4 (bytes)
-                                                        );
-  uint32_t current = *current_ptr;
-  current = current | ( 1 << (source & 0x1f));// Only check the least 5 bits
-  *current_ptr = current;
+  //clear minthresh register 
+  *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_MTH_OFFSET)=0;
 
-}
+  //clear all IP/IE/ATTR/CTRL bits for all interrupt sources
+  volatile uint32_t * ptr;
 
-void pic_disable_interrupt (uint32_t source){
-  
-  volatile uint32_t * current_ptr = (volatile uint32_t *) (PIC_CTRL_ADDR +
-                                                         PIC_ENABLE_OFFSET +
-                                                         ((source >> 3) & (~0x3))//Source number divide 32 and then multip 4 (bytes)
-                                                          );
-  uint32_t current = *current_ptr;
-  current = current & ~(( 1 << (source & 0x1f)));// Only check the least 5 bits
-  *current_ptr = current;
-  
-}
+  uint32_t base = (CLIC_ADDR_BASE + CLIC_INT_IP_OFFSET);
+  uint32_t upper = (base + num_irq*4);
 
-void pic_set_priority (uint32_t source, uint32_t priority){
-
-  if (PIC_NUM_PRIORITIES > 0) {
-    volatile uint32_t * priority_ptr = (volatile uint32_t *)
-      (PIC_CTRL_ADDR +
-       PIC_PRIORITY_OFFSET +
-       (source << PIC_PRIORITY_SHIFT_PER_SOURCE));// Each priority reg occupy a word, so multiple 2
-    *priority_ptr = priority;
+  for (ptr = base; ptr < upper; ptr=ptr+4){
+    *ptr = 0;
   }
 }
 
-uint32_t pic_claim_interrupt(){
-  
 
-  volatile uint32_t * claim_addr = (volatile uint32_t * )
-    (PIC_CTRL_ADDR +
-     PIC_CLAIM_OFFSET 
-     );
 
-  return  *claim_addr;
-  
+void clic_enable_interrupt (uint32_t source) {
+    *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_IE_OFFSET+source*4) = 1;
 }
 
-uint32_t pic_check_eip(){
-  
-
-  volatile uint32_t * eip_addr = (volatile uint32_t * )
-    (PIC_CTRL_ADDR +
-     PIC_EIP_OFFSET 
-     );
-
-  return  *eip_addr;
-  
+void clic_disable_interrupt (uint32_t source){
+    *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_IE_OFFSET+source*4) = 0;
 }
 
-void pic_complete_interrupt(uint32_t source){
-  
-  volatile uint32_t * claim_addr = (volatile uint32_t *) (PIC_CTRL_ADDR +
-                                                                PIC_CLAIM_OFFSET  
-                                                                );
-  *claim_addr = source;
-  
+void clic_set_pending(uint32_t source){
+    *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_IP_OFFSET+source*4) = 1;
 }
 
+void clic_clear_pending(uint32_t source){
+    *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_IP_OFFSET+source*4) = 0;
+}
+
+void clic_set_intctrl (uint32_t source, uint8_t intctrl){
+  *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_CTRL_OFFSET+source*4) = intctrl;
+}
+
+uint8_t clic_get_intctrl  (uint32_t source){
+  return *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_CTRL_OFFSET+source*4);
+}
+
+void clic_set_intattr (uint32_t source, uint8_t intattr){
+  *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_ATTR_OFFSET+source*4) = intattr;
+}
+
+uint8_t clic_get_intattr  (uint32_t source){
+  return *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_INT_ATTR_OFFSET+source*4);
+}
+
+void clic_set_cliccfg (uint8_t cliccfg){
+  *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_CFG_OFFSET) = cliccfg;
+}
+
+uint8_t clic_get_cliccfg  (){
+  return *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_CFG_OFFSET);
+}
+
+void clic_set_mth (uint8_t mth){
+  *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_MTH_OFFSET) = mth;
+}
+
+uint8_t clic_get_mth  (){
+  return *(volatile uint8_t*)(CLIC_ADDR_BASE+CLIC_MTH_OFFSET);
+}
+
+//sets nlbits 
+void clic_set_nlbits(uint8_t nlbits) {
+  //shift nlbits to correct position
+  uint8_t nlbits_shifted = nlbits << CLIC_CFG_NLBITS_LSB;
+
+  //read the current cliccfg 
+  uint8_t old_cliccfg = clic_get_cliccfg();
+  uint8_t new_cliccfg = (old_cliccfg & (~CLIC_CFG_NLBITS_MASK)) | (CLIC_CFG_NLBITS_MASK & nlbits_shifted); 
+
+  clic_set_cliccfg(new_cliccfg);
+}
+
+//get nlbits 
+uint8_t clic_get_nlbits() {
+  //extract nlbits
+  uint8_t nlbits = clic_get_cliccfg();
+  nlbits = (nlbits & CLIC_CFG_NLBITS_MASK) >> CLIC_CFG_NLBITS_LSB;
+}
+
+//sets an interrupt level based encoding of nlbits and CLICINTCTLBITS
+uint8_t clic_set_int_level(uint32_t source, uint8_t level) {
+  //extract nlbits
+  uint8_t nlbits = clic_get_nlbits();
+  if (nlbits > CLICINTCTLBITS) {
+    nlbits = CLICINTCTLBITS; 
+  }
+
+  //shift level right to mask off unused bits
+  level = level >> (8-nlbits);
+  //shift level into correct bit position
+  level = level << (8-nlbits);
+ 
+  //write to clicintctrl
+  uint8_t current_intctrl = clic_get_intctrl(source);
+  //shift intctrl left to mask off unused bits
+  current_intctrl = current_intctrl << nlbits;
+  //shift intctrl into correct bit position
+  current_intctrl = current_intctrl << nlbits;
+
+  clic_set_intctrl(source, (current_intctrl | level));
+
+  return level;
+}
+
+//gets an interrupt level based encoding of nlbits
+uint8_t clic_get_int_level(uint32_t source) {
+  //extract nlbits
+  uint8_t nlbits = clic_get_nlbits();
+  if (nlbits > CLICINTCTLBITS) {
+    nlbits = CLICINTCTLBITS; 
+  }
+
+  uint8_t intctrl = clic_get_intctrl(source);
+
+  //shift intctrl
+  intctrl = intctrl >> (8-nlbits);
+  //shift intctrl
+  uint8_t level = intctrl << (8-nlbits);
+
+  return level;
+}
+
+void clic_mode_enable() {
+  uint32_t mtvec_value = read_csr(mtvec);
+  mtvec_value = mtvec_value & 0xFFFFFFC0;
+  mtvec_value = mtvec_value | 0x00000003;
+  write_csr(mtvec,mtvec_value);
+}
 
 

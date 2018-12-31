@@ -6,17 +6,24 @@
 #include <unistd.h>
 #include "stdatomic.h"
 
-#include "n200/drivers/n200_func.h"
+#include "n22/drivers/n22_func.h"
 #include "soc/drivers/soc.h"
 #include "soc/drivers/board.h"
-#include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/n200_pic_tmr.h"
+#include "n22/drivers/riscv_encoding.h"
+#include "n22/drivers/n22_tmr.h"
+#include "n22/drivers/n22_clic.h"
 
 #define BUTTON_1_GPIO_OFFSET 30
 #define BUTTON_2_GPIO_OFFSET 31
 
-#define PIC_INT_DEVICE_BUTTON_1 (SOC_PIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
-#define PIC_INT_DEVICE_BUTTON_2 (SOC_PIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
+   //SOC_CLIC_INT_GPIO_BASE   7
+   // #define CLIC_INT_DEVICE_BUTTON_1 (SOC_CLIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
+   // #define CLIC_INT_DEVICE_BUTTON_2 (SOC_CLIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
+#define CLIC_INT_DEVICE_BUTTON_1 37
+#define CLIC_INT_DEVICE_BUTTON_2 38
+
+#define BUTTON_1_HANDLER clic_irq37_handler
+#define BUTTON_2_HANDLER clic_irq38_handler
 
 
 void reset_demo (void);
@@ -28,7 +35,7 @@ void no_interrupt_handler (void) {};
 
 
 /*Entry Point for Machine Timer Interrupt Handler*/
-void handle_m_time_interrupt(){
+void MTIME_HANDLER(){
 
     // Use write functions instead of printf
   write (STDOUT_FILENO, "Begin mtime handler\n", strlen("Begin mtime handler\n"));
@@ -90,7 +97,7 @@ This is printf function printed:  \n\
 
 
 
-void button_1_handler(void) {
+void BUTTON_1_HANDLER(void) {
 
   //printf ("%s","----Begin button1 handler\n");
   write (STDOUT_FILENO, "----Begin button1 handler\n", strlen("----Begin button1 handler\n"));
@@ -106,7 +113,7 @@ void button_1_handler(void) {
 };
 
 
-void button_2_handler(void) {
+void BUTTON_2_HANDLER(void) {
 
   //printf ("%s","-------------Begin button2 handler\n");
   write (STDOUT_FILENO, "----------Begin button2 handler\n", strlen("----------Begin button2 handler\n"));
@@ -121,28 +128,20 @@ void button_2_handler(void) {
 
 };
 
-void register_pic_irqs (){
 
-  for (int ii = 0; ii < PIC_NUM_INTERRUPTS; ii ++){
-    pic_interrupt_handlers[ii] = no_interrupt_handler;
-  }
-
-  pic_interrupt_handlers[PIC_INT_TMR] = handle_m_time_interrupt;
-  pic_interrupt_handlers[PIC_INT_DEVICE_BUTTON_1] = button_1_handler;
-  pic_interrupt_handlers[PIC_INT_DEVICE_BUTTON_2] = button_2_handler;
-
+void config_clic_irqs (){
 
   // Have to enable the interrupt both at the GPIO level,
-  // and at the PIC level.
-  pic_enable_interrupt (PIC_INT_TMR);
-  pic_enable_interrupt (PIC_INT_DEVICE_BUTTON_1);
-  pic_enable_interrupt (PIC_INT_DEVICE_BUTTON_2);
+  // and at the CLIC level.
+  clic_enable_interrupt (CLIC_INT_TMR);
+  clic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_1);
+  clic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_2);
 
-  // Priority must be set > 0 to trigger the interrupt.
-  //  The button have higher priority
-  pic_set_priority(PIC_INT_TMR, 1);
-  pic_set_priority(PIC_INT_DEVICE_BUTTON_1, 2);
-  pic_set_priority(PIC_INT_DEVICE_BUTTON_2, 3);
+  clic_set_nlbits(4);
+  //  The button have higher level
+  clic_set_int_level(CLIC_INT_TMR, 1);
+  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_1, 2);
+  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_2, 3);
 
  } 
 
@@ -203,7 +202,7 @@ int main(int argc, char **argv)
 
 
 
-  register_pic_irqs();
+  config_clic_irqs();
 
   setup_mtime();
 

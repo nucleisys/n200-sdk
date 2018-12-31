@@ -14,9 +14,22 @@
 void _init()
 {
   #ifndef NO_INIT
-  soc_init();
+  soc_init();// We must put this first before use any printf later
 
+  printf("**************************************\n");
+  printf("**************************************\n");
+  printf("*                                    *\n");
   printf("Core freq at %d Hz\n", get_cpu_freq());
+  printf("*                                    *\n");
+  printf("**************************************\n");
+  printf("**************************************\n");
+
+  clic_init(CLIC_NUM_INTERRUPTS);
+  clic_mode_enable();
+
+  printf("\n\n\nAfter CLIC mode enabled, the mtvec value is %x \n\n\n", read_csr(mtvec));
+
+
 
 
   // // It must be NOTED: 

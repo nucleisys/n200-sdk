@@ -4,34 +4,57 @@
 #define N200_CLIC_H
 
   // Need to know the following info from the soc.h, so include soc.h here
-  //   SOC_CLIC_CTRL_ADDR      : what is the base address of PIC in this SoC
-  //   SOC_CLIC_NUM_INTERRUPTS : how much of irq configured in total for the PIC in this SoC
+  //   SOC_CLIC_CTRL_ADDR      : what is the base address of CLIC in this SoC
+  //   SOC_CLIC_NUM_INTERRUPTS : how much of irq configured in total for the CLIC in this SoC
 #include "soc/drivers/soc.h"
 
+#define CLICINTCTLBITS  8
 
-// 32 bits per source
-#define PIC_PRIORITY_OFFSET            _AC(0x0000,UL)
-#define PIC_PRIORITY_SHIFT_PER_SOURCE  2
-// 1 bit per source (1 address)
-#define PIC_PENDING_OFFSET             _AC(0x1000,UL)
+//CLIC memory map
+//   Offset
+//  0x0000       1B          RW        cliccfg
+#define CLIC_CFG_OFFSET            0x0
+//  0x0004       4B          R         clicinfo   
+#define CLIC_INFO_OFFSET           0x4
+//  0x000B       1B          RW        mintthresh 
+#define CLIC_MTH_OFFSET         0xB
+//
+//  0x1000+4*i   1B/input    RW        clicintip[i]
+#define CLIC_INT_IP_OFFSET            _AC(0x1000,UL)
+//  0x1001+4*i   1B/input    RW        clicintie[i]
+#define CLIC_INT_IE_OFFSET            _AC(0x1001,UL)
+//  0x1002+4*i   1B/input    RW        clicintattr[i]
+#define CLIC_INT_ATTR_OFFSET          _AC(0x1002,UL)
+//  0x1003+4*i   1B/input    RW        clicintctl[i]
+#define CLIC_INT_CTRL_OFFSET          _AC(0x1003,UL)
+//
+//  ...
+//
+#define CLIC_ADDR_BASE           SOC_CLIC_CTRL_ADDR
 
-//0x80 per target
-#define PIC_ENABLE_OFFSET              0x1100
-#define PIC_THRESHOLD_OFFSET           0x1200
-#define PIC_CLAIM_OFFSET               0x1204
-#define PIC_EIP_OFFSET                 0x1208
+#define CLIC_NUM_INTERRUPTS (SOC_CLIC_NUM_INTERRUPTS + 19)
 
-#define PIC_MAX_SOURCE                 1023
-#define PIC_SOURCE_MASK                0x3FF
+#define CLIC_CFG_NLBITS_MASK          _AC(0x1E,UL)
+#define CLIC_CFG_NLBITS_LSB     (1u)
 
-#define PIC_CTRL_ADDR           SOC_PIC_CTRL_ADDR
-#define PIC_REG(offset)         _REG32(PIC_CTRL_ADDR, offset)
-#define PIC_NUM_PRIORITIES 7
+#define CLIC_INT_SFT         3
+#define CLIC_INT_TMR         7
+#define CLIC_INT_IMECCI      16
+#define CLIC_INT_BWEI        17
+#define CLIC_INT_PMOVI       18
 
-#define PIC_NUM_INTERRUPTS SOC_PIC_NUM_INTERRUPTS
+#define MTIME_HANDLER   clic_mtip_handler
+#define SSIP_HANDLER    clic_ssip_handler 
+#define MSIP_HANDLER    clic_msip_handler 
+#define UTIP_HANDLER    clic_utip_handler 
+#define STIP_HANDLER    clic_stip_handler 
+#define IRQ7_HANDLER    clic_irq7_handler 
+#define UEIP_HANDLER    clic_ueip_handler 
+#define SEIP_HANDLER    clic_seip_handler 
+#define MEIP_HANDLER    clic_meip_handler 
+#define IMECCI_HANDLER  clic_imecci_handler
+#define BWEI_HANDLER    clic_bwei_handler
+#define PMOVI_HANDLER   clic_pmovi_handler
 
-#define PIC_INT_RESERVED    0
-#define PIC_INT_SFT         1
-#define PIC_INT_TMR         2
 
 #endif

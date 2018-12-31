@@ -16,16 +16,6 @@ __attribute__((weak)) uintptr_t handle_trap(uintptr_t mcause, uintptr_t sp)
 }
 
 
-/*Entry Point for PIC Interrupt Handler*/
-__attribute__((weak)) uint32_t handle_irq(uint32_t int_num){
-    // Enable interrupts to allow interrupt preempt based on priority
-    set_csr(mstatus, MSTATUS_MIE);
-  pic_interrupt_handlers[int_num]();
-    // Disable interrupts 
-    clear_csr(mstatus, MSTATUS_MIE);
-  return int_num;
-}
-
 
 __attribute__((weak)) uintptr_t handle_nmi()
 {
