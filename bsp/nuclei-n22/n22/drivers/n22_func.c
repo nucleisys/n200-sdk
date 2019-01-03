@@ -224,7 +224,7 @@ uint8_t clic_set_int_level(uint32_t source, uint8_t level) {
   //shift intctrl left to mask off unused bits
   current_intctrl = current_intctrl << nlbits;
   //shift intctrl into correct bit position
-  current_intctrl = current_intctrl << nlbits;
+  current_intctrl = current_intctrl >> nlbits;
 
   clic_set_intctrl(source, (current_intctrl | level));
 
