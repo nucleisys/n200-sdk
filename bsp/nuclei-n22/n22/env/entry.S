@@ -8,6 +8,13 @@
 #include "n22/drivers/n22_clic.h"
 #include "n22/drivers/n22_tmr.h"
 
+###############################################
+###############################################
+# Disable Interrupt
+#
+.macro DISABLE_MIE
+  csrc CSR_MSTATUS, MSTATUS_MIE  
+.endm
 
 
 ###############################################
@@ -139,15 +146,20 @@ service_loop:
   // update the link register 
   csrrw ra, CSR_JLMNXTI, ra 
   
+  //TODO: this post checking can be removed
   csrr a0, CSR_MNXTI   # Check any pending interrupt at level > mcause.pil
   bnez a0, service_loop   # Loop to service any interrupt.
  
+  RESTORE_CONTEXT
+
+  #---- Critical section with interrupts disabled -----------------------
+  DISABLE_MIE # Disable interrupts 
+
   LOAD x5,  17*REGBYTES(sp)
   csrw CSR_MEPC, x5  
   LOAD x5,  16*REGBYTES(sp)
   csrw CSR_MCAUSE, x5  
 
-  RESTORE_CONTEXT
 
   // De-allocate the stack space
   addi sp, sp, 18*REGBYTES
