@@ -139,9 +139,9 @@ void config_clic_irqs (){
 
   clic_set_nlbits(4);
   //  The button have higher level
-  clic_set_int_level(CLIC_INT_TMR, 1);
-  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_1, 2);
-  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_2, 3);
+  clic_set_int_level(CLIC_INT_TMR, 1<<4);
+  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_1, 2<<4);
+  clic_set_int_level(CLIC_INT_DEVICE_BUTTON_2, 3<<4);
 
  } 
 
