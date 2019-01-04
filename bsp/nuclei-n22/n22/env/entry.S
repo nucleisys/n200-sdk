@@ -90,13 +90,13 @@
 
 ###############################################
 ###############################################
-// Trap entry point
+// exception entry point
 //
-  .section      .text.trap	
+  .section      .text.exception	
   .align 6// In CLIC mode, the trap entry must be 64bytes aligned
-  .global trap_entry
-.weak trap_entry
-trap_entry:
+  .global exception_entry
+.weak exception_entry
+exception_entry:
   // Allocate the stack space
   addi sp, sp, -18*REGBYTES
 
@@ -120,6 +120,85 @@ trap_entry:
   addi sp, sp, 18*REGBYTES
   // Return to regular code
   mret
+
+###############################################
+###############################################
+// trap entry point
+//
+  .section      .text.trap	
+  .equ FRAMESIZE, 256
+  .align 6
+  .global trap_entry
+.weak trap_entry
+trap_entry:
+  addi sp, sp, -FRAMESIZE // Allocate space on stack. 
+  sw a1, 11*REGBYTES(sp)       // Save a1.
+  csrr a1, CSR_MCAUSE         // Get mcause of interrupted context.
+  sw a0, 10*REGBYTES(sp)       // Save a0.
+  csrr a0, CSR_MEPC           // Get mepc of interrupt context.
+  bgez a1, exception_entry     // Handle synchronous exception. 
+  sw a0, 32*REGBYTES(sp)       // Save mepc.
+  sw a1, 33*REGBYTES(sp)       // Save mcause of interrupted context.
+  sw a2, 12*REGBYTES(sp)    // Save other argument registers.
+  sw a3, 13*REGBYTES(sp)
+  sw a4, 14*REGBYTES(sp)
+  sw a5, 15*REGBYTES(sp)
+  sw a6, 16*REGBYTES(sp)
+  sw a7, 17*REGBYTES(sp)
+  sw t0, 5*REGBYTES(sp)    // Save temporaries.
+  sw t1, 6*REGBYTES(sp)
+  sw t2, 7*REGBYTES(sp)
+  sw t3, 28*REGBYTES(sp)
+  sw t4, 29*REGBYTES(sp)
+  sw t5, 30*REGBYTES(sp)
+  sw t6, 31*REGBYTES(sp)
+  sw ra, 1*REGBYTES(sp)   // Save return address 
+  csrrsi a0, CSR_MNXTI, MSTATUS_MIE   // Get highest current interrupt and enable interrupts.
+                            // Will return original interrupt if no others appear. 
+  //----Interrupts enabled ---------------------
+  beqz a0, exit           // Check if original interrupt vanished. 
+
+int_loop:             // 5 instructions in pending-interrupt service loop.
+  lw a1, (a0)             // Indirect into handler vector table for function pointer. 
+  csrrsi x0, CSR_MSTATUS, MSTATUS_MIE // Ensure interrupts enabled. 
+
+  jalr a1                 // Call C ABI Routine, a0 has interrupt ID encoded. 
+                          // Routine must clear down interrupt in CLIC.
+  csrrsi a0, CSR_MNXTI, MSTATUS_MIE   // Claim any pending interrupt at level > mcause.pil 
+  bnez a0, int_loop   // Loop to service any interrupt. 
+
+//--- Restore ABI registers with interrupts enabled -
+  lw ra, 1*REGBYTES(sp)    // Restore return address
+  lw t0, 5*REGBYTES(sp)    // Restore temporaries.
+  lw t1, 6*REGBYTES(sp)
+  lw t2, 7*REGBYTES(sp)
+  lw t3, 28*REGBYTES(sp)
+  lw t4, 29*REGBYTES(sp)
+  lw t5, 30*REGBYTES(sp)
+  lw t6, 31*REGBYTES(sp)
+  lw a2, 12*REGBYTES(sp)    // Restore other arguments.
+  lw a3, 13*REGBYTES(sp)
+  lw a4, 14*REGBYTES(sp)
+  lw a5, 15*REGBYTES(sp)
+  lw a6, 16*REGBYTES(sp)
+  lw a7, 17*REGBYTES(sp)
+  lw a1, 33*REGBYTES(sp)       // Get saved mcause,
+exit:                     // Fast exit point.
+  lw a0, 32*REGBYTES(sp)       // Get saved mepc.
+
+  csrrci x0, CSR_MSTATUS, MSTATUS_MIE // Disable interrupts 
+//---- Critical section with interrupts disabled -----------------------
+  csrw CSR_MCAUSE, a1         // Restore previous context.
+
+  lw a1, 11*REGBYTES(sp)       // Restore original a1 value.
+  csrw mepc, a0           // Restore previous context.
+
+  csrrci a0, CSR_MNXTI, MSTATUS_MIE   // Claim highest current interrupt. 
+  bnez a0, int_loop   // Go around if new interrupt.
+
+  lw a0, 10*REGBYTES(sp)       // Restore original a0 value.
+  addi sp, sp, FRAMESIZE  // Reclaim stack space.
+  mret                    // Return from interrupt.
 
 ###############################################
 ###############################################

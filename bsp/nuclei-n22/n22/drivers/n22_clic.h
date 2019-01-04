@@ -25,6 +25,13 @@
 #define CLIC_INT_IE_OFFSET            _AC(0x1001,UL)
 //  0x1002+4*i   1B/input    RW        clicintattr[i]
 #define CLIC_INT_ATTR_OFFSET          _AC(0x1002,UL)
+
+#define CLIC_INT_ATTR_SHV              0x01
+#define CLIC_INT_ATTR_TRIG_LEVEL       0x00
+#define CLIC_INT_ATTR_TRIG_EDGE        0x02
+#define CLIC_INT_ATTR_TRIG_POS         0x00
+#define CLIC_INT_ATTR_TRIG_NEG         0x04
+
 //  0x1003+4*i   1B/input    RW        clicintctl[i]
 #define CLIC_INT_CTRL_OFFSET          _AC(0x1003,UL)
 //

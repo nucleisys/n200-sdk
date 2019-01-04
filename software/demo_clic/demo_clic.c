@@ -11,28 +11,27 @@
 #include "soc/drivers/soc.h"
 #include "soc/drivers/board.h"
 #include "n22/drivers/riscv_encoding.h"
-#include "n22/drivers/n22_tmr.h"
-#include "n22/drivers/n22_clic.h"
+#include "n22/drivers/clic_driver.h"
 
 #define BUTTON_1_GPIO_OFFSET 30
 #define BUTTON_2_GPIO_OFFSET 31
 
-   //SOC_CLIC_INT_GPIO_BASE 7
-   //CLIC_INT_GPIO_BASE   SOC_CLIC_INT_GPIO_BASE+19
-   // #define CLIC_INT_DEVICE_BUTTON_1 (CLIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
-   // #define CLIC_INT_DEVICE_BUTTON_2 (CLIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
-#define CLIC_INT_DEVICE_BUTTON_1 56
-#define CLIC_INT_DEVICE_BUTTON_2 57
+#define CLIC_HART0_ADDR              SOC_CLIC_CTRL_ADDR
+#define CLIC_INT_DEVICE_BUTTON_1     (SOC_CLIC_INT_GPIO_BASE + 19 + BUTTON_1_GPIO_OFFSET)
+#define CLIC_INT_DEVICE_BUTTON_2     (SOC_CLIC_INT_GPIO_BASE + 19 + BUTTON_2_GPIO_OFFSET)
 
-#define BUTTON_1_HANDLER clic_irq56_handler
-#define BUTTON_2_HANDLER clic_irq57_handler
+//clic data structure
+clic_instance_t clic;
 
+/**************************************************************/
+void default_handler(void)
+{
+   uint32_t source = read_csr(mcause) & 0x3ff;
+   printf("default handler(%d)\n", source);
 
-void reset_demo (void);
-
-
-
-void no_interrupt_handler (void) {};
+   // Clear pending bit
+   clic_clear_pending(&clic, source);
+}
 
 void wait_seconds(size_t n)
 {
@@ -51,11 +50,10 @@ void wait_seconds(size_t n)
   printf("-----------------Waited %d seconds.\n", n);
 }
 
-
 /*Entry Point for Machine Timer Interrupt Handler*/
-void MTIME_HANDLER(){
+void handle_m_time_interrupt(){
 
-  printf ("%s","Begin mtime handler\n");
+  printf("%s", "Begin mtime handler\n");
   GPIO_REG(GPIO_OUTPUT_VAL) ^= (0x1 << RED_LED_GPIO_OFFSET);
 
   volatile uint64_t * mtime       = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIME);
@@ -66,11 +64,10 @@ void MTIME_HANDLER(){
 
   wait_seconds(5);// Wait for a while
   
-  printf ("%s","End mtime handler\n");
+  printf("%s","End mtime handler\n");
 
+  clic_clear_pending(&clic, IRQ_M_TIMER);
 }
-
-
 
 static void _putc(char c) {
   while ((int32_t) UART0_REG(UART_REG_TXFIFO) < 0);
@@ -91,12 +88,12 @@ char * read_instructions_msg= " \
  ";
 
 
-const char * printf_instructions_msg= " \
+const char * print_instructions_msg= " \
 \n\
 \n\
 \n\
 \n\
-This is printf function printed:  \n\
+This is print function printed:  \n\
 \n\
              !! Here We Go, HummingBird !! \n\
 \n\
@@ -113,9 +110,9 @@ This is printf function printed:  \n\
 
 
 
-void BUTTON_1_HANDLER(void) {
+void button_1_handler(void) {
 
-  printf ("%s","----Begin button1 handler\n");
+  printf("%s", "----Begin button1 handler\n");
 
   // Green LED On
   GPIO_REG(GPIO_OUTPUT_VAL) |= (1 << GREEN_LED_GPIO_OFFSET);
@@ -125,13 +122,15 @@ void BUTTON_1_HANDLER(void) {
 
   wait_seconds(5);// Wait for a while
 
-  printf ("%s","----End button1 handler\n");
+  printf("%s","----End button1 handler\n");
+
+  clic_clear_pending(&clic, CLIC_INT_DEVICE_BUTTON_1);
 };
 
 
-void BUTTON_2_HANDLER(void) {
+void button_2_handler(void) {
 
-  printf ("%s","--------Begin button2 handler\n");
+  printf("%s", "--------Begin button2 handler\n");
 
   // Blue LED On
   GPIO_REG(GPIO_OUTPUT_VAL) |= (1 << BLUE_LED_GPIO_OFFSET);
@@ -140,36 +139,41 @@ void BUTTON_2_HANDLER(void) {
 
   wait_seconds(5);// Wait for a while
 
-  printf ("%s","--------End button2 handler\n");
+  printf("%s","--------End button2 handler\n");
 
+  clic_clear_pending(&clic, CLIC_INT_DEVICE_BUTTON_2);
 };
 
-void config_eclic_irqs (){
+void clic_isr_setup(uint32_t source, interrupt_function_ptr_t isr, uint8_t level){
 
-  // Have to enable the interrupt both at the GPIO level,
-  // and at the CLIC level.
-  eclic_enable_interrupt (CLIC_INT_TMR);
-  eclic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_1);
-  eclic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_2);
+  clic_install_handler(&clic, source, isr);
+  clic_set_int_level(&clic, source, level);
+  //clic_set_attribute(&clic, source, CLIC_INT_ATTR_TRIG_NEG);
+  clic_enable_interrupt(&clic, source);
+}
 
-  eclic_set_nlbits(4);
-  //  The button have higher level
-  eclic_set_int_level(CLIC_INT_TMR, 1<<4);
-  eclic_set_int_level(CLIC_INT_DEVICE_BUTTON_1, 2<<4);
-  eclic_set_int_level(CLIC_INT_DEVICE_BUTTON_2, 3<<4);
+void clic_setup (){
+  clic_init(&clic, CLIC_HART0_ADDR, localISR, default_handler);
 
- } 
+  // Use all bits for levels, no shv
+  clic_set_cliccfg(&clic, (clic.num_config_bits << 1));
+  clic_set_clicthresh (&clic, 0);
+  
+  // Setup user's isr
+  clic_isr_setup(IRQ_M_TIMER, handle_m_time_interrupt, 1);
+  clic_isr_setup(CLIC_INT_DEVICE_BUTTON_1, button_1_handler, 2);
+  clic_isr_setup(CLIC_INT_DEVICE_BUTTON_2, button_2_handler, 3);
+} 
 
 
 void setup_mtime (){
 
-    // Set the machine timer to go off in 2 seconds.
+    // Set the machine timer to go off in 3 seconds.
     volatile uint64_t * mtime    = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIME);
     volatile uint64_t * mtimecmp = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIMECMP);
     uint64_t now = *mtime;
     uint64_t then = now + 2 * TMR_FREQ;
     *mtimecmp = then;
-
 }
 
 int main(int argc, char **argv)
@@ -177,7 +181,6 @@ int main(int argc, char **argv)
   // Set up the GPIOs such that the LED GPIO
   // can be used as both Inputs and Outputs.
   
-
   GPIO_REG(GPIO_OUTPUT_EN)  &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
   GPIO_REG(GPIO_PULLUP_EN)  &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
   GPIO_REG(GPIO_INPUT_EN)   |=  ((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
@@ -192,48 +195,35 @@ int main(int argc, char **argv)
   GPIO_REG(GPIO_OUTPUT_VAL)  |=   (0x1 << RED_LED_GPIO_OFFSET) ;
   GPIO_REG(GPIO_OUTPUT_VAL)  &=  ~((0x1<< BLUE_LED_GPIO_OFFSET) | (0x1<< GREEN_LED_GPIO_OFFSET)) ;
 
-
-  
   // Print the message
-  printf ("%s",printf_instructions_msg);
+  printf("%s", print_instructions_msg);
 
-  //printf("\nIn main function, the mstatus is 0x%x\n", read_csr(mstatus));
-
-
-  printf ("%s","\nPlease enter any letter from keyboard to continue!\n");
+  printf("%s","\nPlease enter any letter from keyboard to continue!\n");
 
   char c;
   // Check for user input
   while(1){
     if (_getc(&c) != 0){
-       printf ("%s","I got an input, it is\n\r");
+       printf("%s","I got an input, it is\n\r");
        break;
     }
   }
   _putc(c);
-  printf ("\n\r");
-  printf ("%s","\nThank you for supporting RISC-V, you will see the blink soon on the board!\n");
+  printf("%s","\n\nThank you for supporting RISC-V, you will see the blink soon on the board!\n");
 
-  
-
-
-
-  config_eclic_irqs();
+  clic_setup();
 
   setup_mtime();
 
   // Enable interrupts in general.
   set_csr(mstatus, MSTATUS_MIE);
 
-
   // For Bit-banging 
-  
   uint32_t bitbang_mask = 0;
   bitbang_mask = (1 << 13);
 
   GPIO_REG(GPIO_OUTPUT_EN) |= bitbang_mask;
 
-  
   while (1){
     GPIO_REG(GPIO_OUTPUT_VAL) ^= bitbang_mask;
     // For Bit-banging with Atomics demo if the A extension is supported.
