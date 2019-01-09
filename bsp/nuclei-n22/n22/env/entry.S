@@ -136,7 +136,7 @@ irq_entry: // -------------> This label will be set to MTVT2 register
   SAVE_CONTEXT// Save 16 regs
 
   //------This special CSR read operation, which is actually use mcause as operand to directly store it to memory
-  csrrwi  x0, CSR_PUSHCAUSE, 16
+  csrrwi  x0, CSR_PUSHMCAUSE, 16
   //------This special CSR read operation, which is actually use mepc as operand to directly store it to memory
   csrrwi  x0, CSR_PUSHMEPC, 17
  
@@ -144,12 +144,8 @@ service_loop:
   //------This special CSR read/write operation, which is actually Claim the CLIC to find its pending highest
   // ID, if the ID is not 0, then automatically enable the mstatus.MIE, and jump to its vector-entry-label, and
   // update the link register 
-  csrrw ra, CSR_JLMNXTI, ra 
+  csrrw ra, CSR_MINTSEL_JAL, ra 
   
-  //TODO: this post checking can be removed
-  csrr a0, CSR_MNXTI   # Check any pending interrupt at level > mcause.pil
-  bnez a0, service_loop   # Loop to service any interrupt.
- 
   RESTORE_CONTEXT
 
   #---- Critical section with interrupts disabled -----------------------
@@ -160,36 +156,6 @@ service_loop:
   LOAD x5,  16*REGBYTES(sp)
   csrw CSR_MCAUSE, x5  
 
-
-  // De-allocate the stack space
-  addi sp, sp, 18*REGBYTES
-  // Return to regular code
-  mret
-
-###############################################
-###############################################
-// NMI entry point
-//
-  .section      .text.nmi	
-  .align 2
-  .global nmi_entry
-.weak nmi_entry
-nmi_entry:
-  // Allocate the stack space
-  addi sp, sp, -18*REGBYTES
-
-  // Save the caller saving registers (context)
-  SAVE_CONTEXT
-  // Save the MEPC/NStatus reg
-  SAVE_MEPC_MSTATUS
-
-     // Call the function
-  call handle_nmi
-
-  // Restore the MEPC/NStatus reg
-  RESTORE_MEPC_MSTATUS
-  // Restore the caller saving registers (context)
-  RESTORE_CONTEXT
 
   // De-allocate the stack space
   addi sp, sp, 18*REGBYTES

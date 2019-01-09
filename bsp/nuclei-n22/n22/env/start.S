@@ -224,18 +224,18 @@ _start:
 	bltu a0, a1, 1b
 2:
 
+	/* Set the the NMI cause to 0x1001 by setting CSR_MMISC_CTL */
+    li t0, 0x200;
+    csrs CSR_MMISC_CTL, t0
+
 	/* Intial the mtvt*/
     la t0, vector_base
     csrw CSR_MTVT, t0
 
-	/* Intial the mnvec  TODO to remove it*/
-    la t0, nmi_entry
-    csrw CSR_MNVEC, t0
-
 	/* Intial the mtvt2 and enable it*/
     la t0, irq_entry
-    csrw CSR_MTVT2, t0
-    csrs CSR_MTVT2, 0x1
+    csrw CSR_MIRQ_ENTRY, t0
+    csrs CSR_MIRQ_ENTRY, 0x1
 
 	/* Intial the mtvec*/
     la t0, trap_entry
