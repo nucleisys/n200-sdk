@@ -5,11 +5,13 @@
 
 #include "n22/drivers/riscv_encoding.h"
 #include "n22/drivers/n22_func.h"
+#include "n22/drivers/clic_driver.h"
 
 
   // Need to include the soc_init function, so need to include the soc_func.h here
 #include "soc/drivers/soc_func.h"
 
+interrupt_function_ptr_t localISR[CLIC_NUM_INTERRUPTS] __attribute__((aligned(512)));
 
 void _init()
 {
@@ -24,10 +26,11 @@ void _init()
   printf("**************************************\n");
   printf("**************************************\n");
 
-  clic_init(CLIC_NUM_INTERRUPTS);
-  clic_mode_enable();
+  //ECLIC init 
+  eclic_init(CLIC_NUM_INTERRUPTS);
+  eclic_mode_enable();
 
-  printf("\n\n\nAfter CLIC mode enabled, the mtvec value is %x \n\n\n", read_csr(mtvec));
+  printf("\n\n\nAfter ECLIC mode enabled, the mtvec value is %x \n\n\n", read_csr(mtvec));
 
 
 

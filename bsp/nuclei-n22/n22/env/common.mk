@@ -27,6 +27,8 @@ ASM_SRCS += $(N22_ENV_DIR)/entry.S
 C_SRCS += $(N22_ENV_DIR)/handlers.c
    # The processor core common functions
 C_SRCS += $(N22_DRIVER_DIR)/n22_func.c
+   # The clcic driver
+C_SRCS += $(N22_DRIVER_DIR)/clic_driver.c
    # The newlib stubs functions
 C_SRCS += $(N22_STUB_DIR)/_exit.c
 C_SRCS += $(N22_STUB_DIR)/write_hex.c
