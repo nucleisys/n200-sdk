@@ -7,5 +7,5 @@ CFLAGS := -O2  -fno-inline -fno-common -falign-labels=4 -falign-functions=4 -fal
 
 
 BSP_BASE = ../../bsp
-include $(BSP_BASE)/$(BOARD)/n200/env/common.mk
+include $(BSP_BASE)/$(BOARD)/n22/env/common.mk
 
