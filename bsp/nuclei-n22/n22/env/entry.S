@@ -66,6 +66,35 @@
 
 ###############################################
 ###############################################
+#restore caller registers
+.macro RESTORE_CONTEXT_EXCPT_X5
+  LOAD x1,  0*REGBYTES(sp)
+  LOAD x6,  2*REGBYTES(sp)
+  LOAD x7,  3*REGBYTES(sp)
+  LOAD x10, 4*REGBYTES(sp)
+  LOAD x11, 5*REGBYTES(sp)
+  LOAD x12, 6*REGBYTES(sp)
+  LOAD x13, 7*REGBYTES(sp)
+  LOAD x14, 8*REGBYTES(sp)
+  LOAD x15, 9*REGBYTES(sp)
+  LOAD x16, 10*REGBYTES(sp)
+  LOAD x17, 11*REGBYTES(sp)
+  LOAD x28, 12*REGBYTES(sp)
+  LOAD x29, 13*REGBYTES(sp)
+  LOAD x30, 14*REGBYTES(sp)
+  LOAD x31, 15*REGBYTES(sp)
+
+.endm
+
+###############################################
+###############################################
+#restore caller registers
+.macro RESTORE_CONTEXT_ONLY_X5
+  LOAD x5,  1*REGBYTES(sp)
+.endm
+
+###############################################
+###############################################
 # Save the mepc and mstatus
 #
 .macro SAVE_MEPC_MSTATUS
@@ -73,6 +102,8 @@
   STORE x5,  16*REGBYTES(sp)
   csrr x5, CSR_MSTATUS  
   STORE x5,  17*REGBYTES(sp)
+  csrr x5, CSR_MXSTATUS  
+  STORE x5,  18*REGBYTES(sp)
 .endm
 
 ###############################################
@@ -84,6 +115,8 @@
   csrw CSR_MEPC, x5  
   LOAD x5,  17*REGBYTES(sp)
   csrw CSR_MSTATUS, x5  
+  LOAD x5,  18*REGBYTES(sp)
+  csrw CSR_MXSTATUS, x5  
 .endm
 
 
@@ -117,7 +150,7 @@ exception_entry:
   RESTORE_CONTEXT
 
   // De-allocate the stack space
-  addi sp, sp, 18*REGBYTES
+  addi sp, sp, 19*REGBYTES
   // Return to regular code
   mret
 
@@ -210,7 +243,7 @@ exit:                     // Fast exit point.
 .weak irq_entry
 irq_entry: // -------------> This label will be set to MTVT2 register
   // Allocate the stack space
-  addi sp, sp, -18*REGBYTES
+  addi sp, sp, -19*REGBYTES
 
   SAVE_CONTEXT// Save 16 regs
 
@@ -218,6 +251,9 @@ irq_entry: // -------------> This label will be set to MTVT2 register
   csrrwi  x0, CSR_PUSHMCAUSE, 16
   //------This special CSR read operation, which is actually use mepc as operand to directly store it to memory
   csrrwi  x0, CSR_PUSHMEPC, 17
+  //TODO: replace it to CSR_PUSHMXSTATUS
+  csrr x5, CSR_MXSTATUS  
+  STORE x5,  18*REGBYTES(sp)
  
 service_loop:
   //------This special CSR read/write operation, which is actually Claim the CLIC to find its pending highest
@@ -225,19 +261,23 @@ service_loop:
   // update the link register 
   csrrw ra, CSR_MINTSEL_JAL, ra 
   
-  RESTORE_CONTEXT
+  RESTORE_CONTEXT_EXCPT_X5
 
   #---- Critical section with interrupts disabled -----------------------
   DISABLE_MIE # Disable interrupts 
 
+  LOAD x5,  18*REGBYTES(sp)
+  csrw CSR_MXSTATUS, x5  
   LOAD x5,  17*REGBYTES(sp)
   csrw CSR_MEPC, x5  
   LOAD x5,  16*REGBYTES(sp)
   csrw CSR_MCAUSE, x5  
 
 
+  RESTORE_CONTEXT_ONLY_X5
+
   // De-allocate the stack space
-  addi sp, sp, 18*REGBYTES
+  addi sp, sp, 19*REGBYTES
   // Return to regular code
   mret
 

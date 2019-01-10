@@ -887,12 +887,14 @@
 #define CSR_MINTSEL_JAL          0x7ED
 #define CSR_PUSHMCAUSE           0x7EE
 #define CSR_PUSHMEPC             0x7EF
+#define CSR_PUSHMXSTATUS         0x7EB
 
 #define CSR_WFE            0x810
 #define CSR_SLEEPVALUE     0x811
 #define CSR_TXEVT          0x812
 
 #define CSR_MMISC_CTL      0x7d0
+#define CSR_MXSTATUS       0x7c4
 
 
 #define CAUSE_MISALIGNED_FETCH 0x0
