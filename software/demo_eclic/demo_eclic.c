@@ -7,25 +7,25 @@
 
 #include "stdatomic.h"
 
-#include "n22/drivers/n22_func.h"
+#include "n200/drivers/n200_func.h"
 #include "soc/drivers/soc.h"
 #include "soc/drivers/board.h"
-#include "n22/drivers/riscv_encoding.h"
-#include "n22/drivers/n22_tmr.h"
-#include "n22/drivers/n22_clic.h"
+#include "n200/drivers/riscv_encoding.h"
+#include "n200/drivers/n200_timer.h"
+#include "n200/drivers/n200_eclic.h"
 
 #define BUTTON_1_GPIO_OFFSET 30
 #define BUTTON_2_GPIO_OFFSET 31
 
-   //SOC_CLIC_INT_GPIO_BASE 7
-   //CLIC_INT_GPIO_BASE   SOC_CLIC_INT_GPIO_BASE+19
-   // #define CLIC_INT_DEVICE_BUTTON_1 (CLIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
-   // #define CLIC_INT_DEVICE_BUTTON_2 (CLIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
-#define CLIC_INT_DEVICE_BUTTON_1 56
-#define CLIC_INT_DEVICE_BUTTON_2 57
+#define ECLIC_INT_DEVICE_BUTTON_1 (SOC_ECLIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
+#define ECLIC_INT_DEVICE_BUTTON_2 (SOC_ECLIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
+// The real value is:
+//#define ECLIC_INT_DEVICE_BUTTON_1 49 // 30+19
+//#define ECLIC_INT_DEVICE_BUTTON_2 50 // 31+19
 
-#define BUTTON_1_HANDLER clic_irq56_handler
-#define BUTTON_2_HANDLER clic_irq57_handler
+// Since the BUTTON_1 ECLIC IRQ number is 49, and BUTTON_2 is 50, we need to overriede the irq49/50 handler 
+#define BUTTON_1_HANDLER eclic_irq49_handler
+#define BUTTON_2_HANDLER eclic_irq50_handler
 
 
 void reset_demo (void);
@@ -46,7 +46,7 @@ void wait_seconds(size_t n)
 
   do {
     delta_mtime = mtime_lo() - start_mtime;
-  } while (delta_mtime < (n * TMR_FREQ));
+  } while (delta_mtime < (n * TIMER_FREQ));
 
   printf("-----------------Waited %d seconds.\n", n);
 }
@@ -55,18 +55,32 @@ void wait_seconds(size_t n)
 /*Entry Point for Machine Timer Interrupt Handler*/
 void MTIME_HANDLER(){
 
+  #ifdef CFG_SIMULATION
+    // Use write functions instead of printf because it will be much faster in simulation
+  write (STDOUT_FILENO, "Begin mtime handler\n", strlen("Begin mtime handler\n"));
+  #else
   printf ("%s","Begin mtime handler\n");
+  #endif
   GPIO_REG(GPIO_OUTPUT_VAL) ^= (0x1 << RED_LED_GPIO_OFFSET);
 
-  volatile uint64_t * mtime       = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIME);
-  volatile uint64_t * mtimecmp    = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIMECMP);
+  volatile uint64_t * mtime       = (uint64_t*) (TIMER_CTRL_ADDR + TIMER_MTIME);
+  volatile uint64_t * mtimecmp    = (uint64_t*) (TIMER_CTRL_ADDR + TIMER_MTIMECMP);
   uint64_t now = *mtime;
-  uint64_t then = now + 0.5 * TMR_FREQ;// Here we set 1 second, but we need to wait 5 cycles to get out from this handler, so the blink will not toggle as 1 cycle
+  #ifdef CFG_SIMULATION
+    // In simulation, we need to make it more quick
+  uint64_t then = now + 0.01 * TIMER_FREQ;
+  #else
+  uint64_t then = now + 0.5 * TIMER_FREQ;// Here we set 1 second, but we need to wait 5 cycles to get out from this handler, so the blink will not toggle as 1 cycle
+  #endif
   *mtimecmp = then;
 
+  #ifdef CFG_SIMULATION
+  write (STDOUT_FILENO, "End mtime handler\n", strlen("End mtime handler\n"));
+  #else
   wait_seconds(5);// Wait for a while
   
   printf ("%s","End mtime handler\n");
+  #endif
 
 }
 
@@ -98,7 +112,7 @@ const char * printf_instructions_msg= " \
 \n\
 This is printf function printed:  \n\
 \n\
-             !! Here We Go, HummingBird !! \n\
+             !! Here We Go, Nuclei-N200 !! \n\
 \n\
      ######    ###    #####   #####          #     #\n\
      #     #    #    #     # #     #         #     #\n\
@@ -115,7 +129,11 @@ This is printf function printed:  \n\
 
 void BUTTON_1_HANDLER(void) {
 
+  #ifdef CFG_SIMULATION
+  write (STDOUT_FILENO, "----Begin button1 handler\n", strlen("----Begin button1 handler\n"));
+  #else
   printf ("%s","----Begin button1 handler\n");
+  #endif
 
   // Green LED On
   GPIO_REG(GPIO_OUTPUT_VAL) |= (1 << GREEN_LED_GPIO_OFFSET);
@@ -123,40 +141,53 @@ void BUTTON_1_HANDLER(void) {
   // Clear the GPIO Pending interrupt by writing 1.
   GPIO_REG(GPIO_RISE_IP) = (0x1 << BUTTON_1_GPIO_OFFSET);
 
+  #ifdef CFG_SIMULATION
+  write (STDOUT_FILENO, "----End button1 handler\n", strlen("----End button1 handler\n"));
+  #else
   wait_seconds(5);// Wait for a while
 
   printf ("%s","----End button1 handler\n");
+  #endif
 };
 
 
-void BUTTON_2_HANDLER(void) {
+void __attribute__ ((interrupt)) BUTTON_2_HANDLER(void) {
 
+  #ifdef CFG_SIMULATION
+  write (STDOUT_FILENO, "----------Begin button2 handler\n", strlen("----------Begin button2 handler\n"));
+  #else
   printf ("%s","--------Begin button2 handler\n");
+  #endif
 
   // Blue LED On
   GPIO_REG(GPIO_OUTPUT_VAL) |= (1 << BLUE_LED_GPIO_OFFSET);
 
   GPIO_REG(GPIO_RISE_IP) = (0x1 << BUTTON_2_GPIO_OFFSET);
 
+  #ifdef CFG_SIMULATION
+  write (STDOUT_FILENO, "----------End button2 handler\n", strlen("----------End button2 handler\n"));
+  #else
   wait_seconds(5);// Wait for a while
 
   printf ("%s","--------End button2 handler\n");
+  #endif
 
 };
 
 void config_eclic_irqs (){
 
   // Have to enable the interrupt both at the GPIO level,
-  // and at the CLIC level.
-  eclic_enable_interrupt (CLIC_INT_TMR);
-  eclic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_1);
-  eclic_enable_interrupt (CLIC_INT_DEVICE_BUTTON_2);
+  // and at the ECLIC level.
+  eclic_enable_interrupt (ECLIC_INT_MTIP);
+  eclic_enable_interrupt (ECLIC_INT_DEVICE_BUTTON_1);
+  eclic_enable_interrupt (ECLIC_INT_DEVICE_BUTTON_2);
 
-  eclic_set_nlbits(4);
+
+  eclic_set_nlbits(3);
   //  The button have higher level
-  eclic_set_int_level(CLIC_INT_TMR, 1<<4);
-  eclic_set_int_level(CLIC_INT_DEVICE_BUTTON_1, 2<<4);
-  eclic_set_int_level(CLIC_INT_DEVICE_BUTTON_2, 3<<4);
+  eclic_set_int_level(ECLIC_INT_MTIP, 1<<(8-3));
+  eclic_set_int_level(ECLIC_INT_DEVICE_BUTTON_1, 2<<(8-3));
+  eclic_set_int_level(ECLIC_INT_DEVICE_BUTTON_2, 3<<(8-3));
 
  } 
 
@@ -164,10 +195,15 @@ void config_eclic_irqs (){
 void setup_mtime (){
 
     // Set the machine timer to go off in 2 seconds.
-    volatile uint64_t * mtime    = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIME);
-    volatile uint64_t * mtimecmp = (uint64_t*) (TMR_CTRL_ADDR + TMR_MTIMECMP);
+    volatile uint64_t * mtime    = (uint64_t*) (TIMER_CTRL_ADDR + TIMER_MTIME);
+    volatile uint64_t * mtimecmp = (uint64_t*) (TIMER_CTRL_ADDR + TIMER_MTIMECMP);
     uint64_t now = *mtime;
-    uint64_t then = now + 2 * TMR_FREQ;
+  #ifdef CFG_SIMULATION
+    // Bob: In simulation, we need to make it more quick
+    uint64_t then = now + 0.001 * TIMER_FREQ;
+  #else
+    uint64_t then = now + 2 * TIMER_FREQ;
+  #endif
     *mtimecmp = then;
 
 }
@@ -202,6 +238,11 @@ int main(int argc, char **argv)
 
   printf ("%s","\nPlease enter any letter from keyboard to continue!\n");
 
+  #ifdef CFG_SIMULATION
+  //Bob: for simulation, we comment it off
+  char c = 0xff;
+  printf ("%s","I got an input, it is\n\r");
+  #else
   char c;
   // Check for user input
   while(1){
@@ -210,6 +251,7 @@ int main(int argc, char **argv)
        break;
     }
   }
+  #endif
   _putc(c);
   printf ("\n\r");
   printf ("%s","\nThank you for supporting RISC-V, you will see the blink soon on the board!\n");

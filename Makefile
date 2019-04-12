@@ -11,7 +11,7 @@ $(info Obtaining additional make variables from $(extra_configs))
 include $(extra_configs)
 endif
 
-SIMTEST     := 0
+SIMULATION     := 0
 
 FLASHXIP    := flashxip
 FLASH       := flash
@@ -22,23 +22,57 @@ OCDCFG := hbird
 HBIRD  := hbird
 OLMX   := olmx
 
+N201        := n201
+N203        := n203
+N205        := n205
+N205F       := n205f
+N205FD      := n205fd
+
+CORE        := n205
+
+CORE_NAME = $(shell echo $(CORE) | tr a-z A-Z)
+core_name = $(shell echo $(CORE) | tr A-Z a-z)
+
+PFLOAT     := 1
 
 
-ISA         := IMAC
-
-
-ISA_STRING = $(shell echo $(ISA) | tr a-z A-Z)
-isa_string = $(shell echo $(ISA) | tr A-Z a-z)
-
-NANO_PFLOAT     := 1
-
-
-RISCV_ARCH := rv32${isa_string}
+ifeq ($(core_name),${N201}) 
+RISCV_ARCH := rv32iac
 RISCV_ABI  := ilp32
+endif
+
+ifeq ($(core_name),${N203}) 
+RISCV_ARCH := rv32imac
+RISCV_ABI  := ilp32
+endif
+
+ifeq ($(core_name),${N205}) 
+RISCV_ARCH := rv32imac
+RISCV_ABI  := ilp32
+endif
+
+ifeq ($(core_name),${N207F}) 
+RISCV_ARCH := rv32imafc
+RISCV_ABI  := ilp32f
+endif
+
+ifeq ($(core_name),${N207FD}) 
+RISCV_ARCH := rv32imafdc
+RISCV_ABI  := ilp32f
+endif
+
+
+
+
+
+PFLOAT     := 1
+YOUR_PRINTF     := 0
+
+
 
 
 # Default target
-BOARD ?= nuclei-n22
+BOARD ?= nuclei-n200
 PROGRAM ?= dhrystone
 GDB_PORT ?= 3333
 
@@ -77,7 +111,7 @@ endif
 #############################################################
 .PHONY: help
 help:
-	@echo "  HummingBird RISC-V Embedded Processor Software Development Kit "
+	@echo "  Nuclei N200 RISC-V Embedded Processor Software Development Kit "
 	@echo "  Makefile targets:"
 	@echo ""
 	@echo " tools [BOARD = $(BOARD)]:"
@@ -118,13 +152,13 @@ toolchain_prefix := $(toolchain_builddir)/prefix
 
 RISCV_PATH ?= $(toolchain_prefix)
 
-RISCV_GCC     := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-gcc)
-RISCV_GXX     := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-g++)
-RISCV_OBJDUMP := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-objdump)
-RISCV_OBJCOPY := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-objcopy)
-RISCV_GDB     := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-gdb)
-RISCV_AR      := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-ar)
-RISCV_SIZE    := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-size)
+RISCV_GCC     := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-gcc)
+RISCV_GXX     := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-g++)
+RISCV_OBJDUMP := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-objdump)
+RISCV_OBJCOPY := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-objcopy)
+RISCV_GDB     := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-gdb)
+RISCV_AR      := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-ar)
+RISCV_SIZE    := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-size)
 
 PATH := $(abspath $(RISCV_PATH)/bin):$(PATH)
 
@@ -196,13 +230,8 @@ clean:
 #############################################################
 # This Section is for Software Compilation
 #############################################################
-ifeq ($(SIMTEST),1)
-PROGRAM_DIR = software/sim_tests/$(PROGRAM)
-PROGRAM_ELF = software/sim_tests/$(PROGRAM)/$(PROGRAM)
-else
 PROGRAM_DIR = software/$(PROGRAM)
 PROGRAM_ELF = software/$(PROGRAM)/$(PROGRAM)
-endif
 
 .PHONY: software_clean
 software_clean:
@@ -210,7 +239,7 @@ software_clean:
 
 .PHONY: software
 software: software_clean
-	$(MAKE) -C $(PROGRAM_DIR) SIZE=$(RISCV_SIZE) CC=$(RISCV_GCC) RISCV_ARCH=$(RISCV_ARCH) NANO_PFLOAT=$(NANO_PFLOAT)  DOWNLOAD=$(DOWNLOAD)  RISCV_ABI=$(RISCV_ABI) AR=$(RISCV_AR) BSP_BASE=$(abspath bsp) BOARD=$(BOARD)
+	$(MAKE) -C $(PROGRAM_DIR) SIZE=$(RISCV_SIZE) CC=$(RISCV_GCC) RISCV_ARCH=$(RISCV_ARCH) YOUR_PRINTF=$(YOUR_PRINTF)  PFLOAT=$(PFLOAT)  DOWNLOAD=$(DOWNLOAD)  RISCV_ABI=$(RISCV_ABI) AR=$(RISCV_AR) BSP_BASE=$(abspath bsp) BOARD=$(BOARD) SIMULATION=$(SIMULATION)
 
 dasm: software 
 	$(RISCV_OBJDUMP) -D $(PROGRAM_ELF) >& $(PROGRAM_ELF).dump
@@ -225,17 +254,17 @@ dasm: software
 OPENOCD_UPLOAD = bsp/${BOARD}/tools/openocd_upload.sh
 ifeq ($(OCDCFG),${OLMX})
 ifeq ($(DOWNLOAD),${ILM})
-OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_olmx_ilm.cfg
+OPENOCDCFG ?= bsp/$(BOARD)/n200/env/openocd_olmx_ilm.cfg
 else
-OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_olmx.cfg
+OPENOCDCFG ?= bsp/$(BOARD)/n200/env/openocd_olmx.cfg
 endif
 endif
 
 ifeq ($(OCDCFG),${HBIRD})
 ifeq ($(DOWNLOAD),${ILM})
-OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_hbird_ilm.cfg
+OPENOCDCFG ?= bsp/$(BOARD)/n200/env/openocd_hbird_ilm.cfg
 else
-OPENOCDCFG ?= bsp/$(BOARD)/n22/env/openocd_hbird.cfg
+OPENOCDCFG ?= bsp/$(BOARD)/n200/env/openocd_hbird.cfg
 endif
 endif
 

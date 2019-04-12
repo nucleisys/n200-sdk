@@ -127,11 +127,22 @@ main ()
   {
     int n;
     //Bob: We dont use scanf
+#ifdef CFG_SIMULATION
+    //Bob: for simulation we make it small
+    Number_Of_Runs = 5;
+#else
     Number_Of_Runs = 160000;
+#endif
   }
   printf ("\n");
 
+  //Bob: turn on cycles
+  printf ("Just turn on the cycles since this benchmark need to use counter to measure performance");
+  enable_mcycle_minstret();
+
+  
   printf ("Execution starts, %d runs through Dhrystone\n", Number_Of_Runs);
+
 
   /***************/
   /* Start timer */
@@ -264,7 +275,11 @@ main ()
   User_Instret = End_Instret - Begin_Instret;
   User_Cycle = End_Cycle - Begin_Cycle;
 
+#ifdef CFG_SIMULATION
+  if (0)
+#else
   if (User_Time < Too_Small_Time)
+#endif
   {
     printf ("Measured time too small to obtain meaningful results\n");
     printf ("Please increase number of runs\n");

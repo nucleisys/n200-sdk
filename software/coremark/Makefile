@@ -17,4 +17,4 @@ CFLAGS += -DFLAGS_STR=\""$(CFLAGS)"\"
 CFLAGS += -DITERATIONS=10000 -DPERFORMANCE_RUN=1
 
 BSP_BASE = ../../bsp
-include $(BSP_BASE)/$(BOARD)/n22/env/common.mk
+include $(BSP_BASE)/$(BOARD)/n200/env/common.mk

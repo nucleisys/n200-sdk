@@ -92,6 +92,11 @@ MAIN_RETURN_TYPE main(void) {
 #else
 MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 #endif
+  //Bob: turn on cycles
+  ee_printf ("Just turn on the cycles since this benchmark need to use counter to measure performance");
+  enable_mcycle_minstret();
+
+  //
 	ee_u16 i,j=0,num_algorithms=0;
 	ee_s16 known_id=-1,total_errors=0;
 	ee_u16 seedcrc=0;
@@ -115,7 +120,11 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 	results[0].iterations=1;
 #endif
     // Bob: change the interation times to make it faster
+#ifdef CFG_SIMULATION
+	results[0].iterations=4;// For simulation we make it small
+#else
 	results[0].iterations=800;
+#endif
 
 	results[0].execs=get_seed_32(5);
 	if (results[0].execs==0) { /* if not supplied, execute all algorithms */
@@ -298,10 +307,14 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 	if (time_in_secs(total_time) > 0)
 		ee_printf("Iterations/Sec   : %d\n",default_num_contexts*results[0].iterations/time_in_secs(total_time));
 #endif
+#ifdef CFG_SIMULATION
+    //Bob: for simulation we just comment this out
+#else 
 	if (time_in_secs(total_time) < 10) {
 		ee_printf("ERROR! Must execute for at least 10 secs for a valid result!\n");
 		total_errors++;
 	}
+#endif
 
 	ee_printf("Iterations       : %lu\n",(ee_u32)default_num_contexts*results[0].iterations);
 	ee_printf("Compiler version : %s\n",COMPILER_VERSION);

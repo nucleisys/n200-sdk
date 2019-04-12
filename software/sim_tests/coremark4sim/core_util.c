@@ -1,1 +1,0 @@
-../../coremark/core_util.c
