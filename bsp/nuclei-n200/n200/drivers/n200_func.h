@@ -64,6 +64,9 @@ uint8_t eclic_get_int_level(uint32_t source);
 
 void eclic_mode_enable();
 
+void eclic_set_vmode(uint32_t source);
+void eclic_set_nonvmode(uint32_t source);
+
 __END_DECLS
 
 #endif

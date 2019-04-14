@@ -258,4 +258,23 @@ void eclic_mode_enable() {
   write_csr(mtvec,mtvec_value);
 }
 
+//sets vector-mode or non-vector mode 
+void eclic_set_vmode(uint32_t source) {
+  //read the current attr 
+  uint8_t old_intattr = eclic_get_intattr(source);
+      // Keep other bits unchanged and only set the LSB bit
+  uint8_t new_intattr = (old_intattr & (~0x1)) | (0x1); 
+
+  eclic_set_intattr(source,new_intattr);
+}
+
+void eclic_set_nonvmode(uint32_t source) {
+  //read the current attr 
+  uint8_t old_intattr = eclic_get_intattr(source);
+      // Keep other bits unchanged and only clear the LSB bit
+  uint8_t new_intattr = (old_intattr & (~0x1)) | (~0x1); 
+
+  eclic_set_intattr(source,new_intattr);
+}
+
 

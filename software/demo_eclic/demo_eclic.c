@@ -53,7 +53,7 @@ void wait_seconds(size_t n)
 
 
 /*Entry Point for Machine Timer Interrupt Handler*/
-void MTIME_HANDLER(){
+void __attribute__ ((interrupt)) MTIME_HANDLER(){
 
   #ifdef CFG_SIMULATION
     // Use write functions instead of printf because it will be much faster in simulation
@@ -151,7 +151,7 @@ void BUTTON_1_HANDLER(void) {
 };
 
 
-void __attribute__ ((interrupt)) BUTTON_2_HANDLER(void) {
+void BUTTON_2_HANDLER(void) {
 
   #ifdef CFG_SIMULATION
   write (STDOUT_FILENO, "----------Begin button2 handler\n", strlen("----------Begin button2 handler\n"));
@@ -189,6 +189,8 @@ void config_eclic_irqs (){
   eclic_set_int_level(ECLIC_INT_DEVICE_BUTTON_1, 2<<(8-3));
   eclic_set_int_level(ECLIC_INT_DEVICE_BUTTON_2, 3<<(8-3));
 
+  //  The MTIME using Vector-Mode
+  eclic_set_vmode(ECLIC_INT_MTIP);
  } 
 
 
