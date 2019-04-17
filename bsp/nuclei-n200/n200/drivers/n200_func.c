@@ -258,4 +258,4 @@ void eclic_mode_enable() {
   write_csr(mtvec,mtvec_value);
 }
 
-
+__attribute__((weak)) void MTIME_HANDLER(){}
