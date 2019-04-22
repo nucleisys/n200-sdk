@@ -278,3 +278,4 @@ void eclic_set_nonvmode(uint32_t source) {
 }
 
 
+__attribute__((weak)) void MTIME_HANDLER(){}

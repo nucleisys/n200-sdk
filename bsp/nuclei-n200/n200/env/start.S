@@ -11,7 +11,6 @@
 
     .weak  eclic_mtip_handler 
 
-    .weak  eclic_meip_handler 
 
     .weak  eclic_irq19_handler
 

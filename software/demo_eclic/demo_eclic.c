@@ -53,7 +53,9 @@ void wait_seconds(size_t n)
 
 
 /*Entry Point for Machine Timer Interrupt Handler*/
-void __attribute__ ((interrupt)) MTIME_HANDLER(){
+  //  Can only enable this attribute if the toolchain support it
+//void __attribute__ ((interrupt)) MTIME_HANDLER(){
+void MTIME_HANDLER(){
 
   #ifdef CFG_SIMULATION
     // Use write functions instead of printf because it will be much faster in simulation
@@ -190,7 +192,8 @@ void config_eclic_irqs (){
   eclic_set_int_level(ECLIC_INT_DEVICE_BUTTON_2, 3<<(8-3));
 
   //  The MTIME using Vector-Mode
-  eclic_set_vmode(ECLIC_INT_MTIP);
+  //  Can only enable this mode if the toolchain support it
+  //eclic_set_vmode(ECLIC_INT_MTIP);
  } 
 
 

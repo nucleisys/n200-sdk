@@ -93,8 +93,8 @@ MAIN_RETURN_TYPE main(void) {
 MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 #endif
   //Bob: turn on cycles
-  ee_printf ("Just turn on the cycles since this benchmark need to use counter to measure performance");
   enable_mcycle_minstret();
+  ee_printf ("Just turn on the cycles since this benchmark need to use counter to measure performance\n");
 
   //
 	ee_u16 i,j=0,num_algorithms=0;
@@ -121,7 +121,7 @@ MAIN_RETURN_TYPE main(int argc, char *argv[]) {
 #endif
     // Bob: change the interation times to make it faster
 #ifdef CFG_SIMULATION
-	results[0].iterations=4;// For simulation we make it small
+	results[0].iterations=2;// For simulation we make it small
 #else
 	results[0].iterations=800;
 #endif

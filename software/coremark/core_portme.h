@@ -1,6 +1,8 @@
 //Bob: put some macro here such that the IDE SDK do not need to specify the macro specially
 //#define FLAGS_STR "-O3 -fno-common -funroll-loops -finline-functions  -falign-functions=4 -falign-jumps=4 -falign-loops=4 -funswitch-loops -fpeel-loops -fgcse-sm -fgcse-las"
-#define FLAGS_STR "-O2 -fno-common -funroll-loops -finline-functions -falign-functions=4 -falign-jumps=4 -falign-loops=4"
+//#define FLAGS_STR "-O2 -fno-common -funroll-loops -finline-functions -falign-functions=4 -falign-jumps=4 -falign-loops=4"
+#define FLAGS_STR "-O3 -funroll-all-loops -finline-limit=600 -ftree-dominator-opts -fno-if-conversion2 -fselective-scheduling -fno-code-hoisting -fno-common -funroll-loops -finline-functions -falign-functions=4 -falign-jumps=4 -falign-loops=4"
+
 #define PERFORMANCE_RUN 1
 #define ITERATIONS 10000
 
