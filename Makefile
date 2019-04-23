@@ -152,13 +152,13 @@ toolchain_prefix := $(toolchain_builddir)/prefix
 
 RISCV_PATH ?= $(toolchain_prefix)
 
-RISCV_GCC     := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-gcc)
-RISCV_GXX     := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-g++)
-RISCV_OBJDUMP := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-objdump)
-RISCV_OBJCOPY := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-objcopy)
-RISCV_GDB     := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-gdb)
-RISCV_AR      := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-ar)
-RISCV_SIZE    := $(abspath $(RISCV_PATH)/bin/riscv64-unknown-elf-size)
+RISCV_GCC     := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-gcc)
+RISCV_GXX     := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-g++)
+RISCV_OBJDUMP := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-objdump)
+RISCV_OBJCOPY := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-objcopy)
+RISCV_GDB     := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-gdb)
+RISCV_AR      := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-ar)
+RISCV_SIZE    := $(abspath $(RISCV_PATH)/bin/riscv-none-embed-size)
 
 PATH := $(abspath $(RISCV_PATH)/bin):$(PATH)
 
