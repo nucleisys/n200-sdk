@@ -88,6 +88,7 @@ CLEAN_OBJS += $(TARGET) $(LINK_OBJS) $(DUMP_OBJS) $(VERILOG_OBJS)
 CFLAGS += -g
 CFLAGS += -march=$(RISCV_ARCH)
 CFLAGS += -mabi=$(RISCV_ABI)
+CFLAGS += -mcmodel=medany
 CFLAGS += -ffunction-sections -fdata-sections -fno-common
 ifeq ($(SIMULATION),1) 
 CFLAGS += -DCFG_SIMULATION
