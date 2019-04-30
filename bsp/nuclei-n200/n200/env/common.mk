@@ -20,6 +20,12 @@ N200_STUB_DIR = $(BSP_BASE)/$(BOARD)/n200/stubs
 
    # The start-up assembly program
 ASM_SRCS += $(N200_ENV_DIR)/start.S
+   # The vector table
+ifeq ($(DOWNLOAD),${FLASH}) 
+ASM_SRCS += $(N200_ENV_DIR)/vtable_ilm.S
+else
+ASM_SRCS += $(N200_ENV_DIR)/vtable.S
+endif
    # The system initilization program
 C_SRCS += $(N200_ENV_DIR)/init.c
    # The interrupt/exception/nmi entry program

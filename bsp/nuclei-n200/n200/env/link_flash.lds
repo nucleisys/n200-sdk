@@ -32,6 +32,7 @@ SECTIONS
 
   .text           :
   {
+    *(.vtable_ilm)
     *(.text.unlikely .text.unlikely.*)
     *(.text.startup .text.startup.*)
     *(.text .text.*)

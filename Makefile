@@ -114,13 +114,7 @@ help:
 	@echo "  Nuclei N200 RISC-V Embedded Processor Software Development Kit "
 	@echo "  Makefile targets:"
 	@echo ""
-	@echo " tools [BOARD = $(BOARD)]:"
-	@echo "    Install compilation & debugging tools to target your desired board."
-	@echo ""
-	@echo " uninstall:"
-	@echo "    Uninstall the compilation & debugging tools."
-	@echo ""
-	@echo " software [PROGRAM=$(PROGRAM) BOARD=$(BOARD)]:"
+	@echo " dasm [PROGRAM=$(PROGRAM) BOARD=$(BOARD)]:"
 	@echo "    Build a software program to load with the"
 	@echo "    debugger."
 	@echo ""
@@ -133,18 +127,8 @@ help:
 	@echo "     Launch OpenOCD or GDB seperately. Allows Ctrl-C to halt running"
 	@echo "     programs."
 	@echo ""
-	@echo " dasm [PROGRAM=$(BOARD)]:"
-	@echo "     Generates the dissassembly output of 'objdump -D' to stdout."
 	@echo ""
 
-.PHONY: clean
-clean:
-
-#############################################################
-# This section is for tool installation
-#############################################################
-.PHONY: tools
-tools: riscv-gnu-toolchain openocd
 
 # Pointers to various important tools in the toolchain.
 toolchain_builddir := $(builddir)/riscv-gnu-toolchain/riscv32-unknown-elf
@@ -165,67 +149,10 @@ PATH := $(abspath $(RISCV_PATH)/bin):$(PATH)
 $(RISCV_GCC) $(RISCV_GXX) $(RISCV_OBJDUMP) $(RISCV_GDB) $(RISCV_AR): $(toolchain_builddir)/install.stamp
 	touch -c $@
 
-# Builds riscv-gnu-toolchain, which contains GCC and all the supporting
-# software for C code.
-.PHONY: riscv-gnu-toolchain
-riscv-gnu-toolchain: $(RISCV_GCC) $(RISCV_GXX) $(RISCV_OBJDUMP) $(RISCV_GDB) $(RISCV_AR)
-
-$(builddir)/riscv-gnu-toolchain/%/install.stamp: $(builddir)/riscv-gnu-toolchain/%/build.stamp
-	$(MAKE) -C $(dir $@) install
-	date > $@
-
-$(builddir)/riscv-gnu-toolchain/%/build.stamp: $(builddir)/riscv-gnu-toolchain/%/configure.stamp
-	$(MAKE) -C $(dir $@)
-	date > $@
-
-$(builddir)/riscv-gnu-toolchain/%-elf/configure.stamp:
-	$(eval $@_TUPLE := $(patsubst $(builddir)/riscv-gnu-toolchain/%-elf/configure.stamp,%,$@))
-	rm -rf $(dir $@)
-	mkdir -p $(dir $@)
-	cd $(dir $@); $(abspath $(toolchain_srcdir)/configure) \
-		--prefix=$(abspath $(dir $@)/prefix) \
-		--disable-linux \
-		--enable-multilib \
-		--with-cmodel=medany \
-		--with-libgcc-cmodel
-	date > $@
 
 .PHONY: 
 clean: 
 
-# Builds and installs OpenOCD, which translates GDB into JTAG for debugging and
-# initializing the target.
-openocd_builddir := $(builddir)/openocd
-openocd_prefix := $(openocd_builddir)/prefix
-
-RISCV_OPENOCD_PATH ?= $(openocd_prefix)
-RISCV_OPENOCD ?= $(RISCV_OPENOCD_PATH)/bin/openocd
-
-.PHONY: openocd
-openocd: $(RISCV_OPENOCD)
-
-$(RISCV_OPENOCD): $(openocd_builddir)/install.stamp
-	touch -c $@
-
-$(openocd_builddir)/install.stamp: $(openocd_builddir)/build.stamp
-	$(MAKE) -C $(dir $@) install
-	date > $@
-
-$(openocd_builddir)/build.stamp: $(openocd_builddir)/configure.stamp
-	$(MAKE) -C $(dir $@)
-	date > $@
-
-$(openocd_builddir)/configure.stamp:
-	rm -rf $(dir $@)
-	mkdir -p $(dir $@)
-	cd $(abspath $(openocd_srcdir)); autoreconf -i
-	cd $(dir $@); $(abspath $(openocd_srcdir)/configure) \
-		--prefix=$(abspath $(dir $@)/prefix) \
-		--disable-werror
-	date > $@
-
-.PHONY: 
-clean: 
 
 #############################################################
 # This Section is for Software Compilation
@@ -301,3 +228,4 @@ GDBCMDS += -ex "target extended-remote localhost:$(GDB_PORT)"
 
 run_gdb:
 	$(RISCV_GDB) $(PROGRAM_DIR)/$(PROGRAM) $(GDBARGS) $(GDBCMDS)
+

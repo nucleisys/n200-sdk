@@ -15,6 +15,7 @@ SECTIONS
 
   .init           :
   {
+    *(.vtable)
     KEEP (*(SORT_NONE(.init)))
   } >ilm AT>ilm 
 
