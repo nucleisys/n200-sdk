@@ -153,6 +153,40 @@ $(RISCV_GCC) $(RISCV_GXX) $(RISCV_OBJDUMP) $(RISCV_GDB) $(RISCV_AR): $(toolchain
 .PHONY: 
 clean: 
 
+# Builds and installs OpenOCD, which translates GDB into JTAG for debugging and
+# initializing the target.
+openocd_builddir := $(builddir)/openocd
+openocd_prefix := $(openocd_builddir)/prefix
+
+RISCV_OPENOCD_PATH ?= $(openocd_prefix)
+RISCV_OPENOCD ?= $(RISCV_OPENOCD_PATH)/bin/openocd
+
+.PHONY: openocd
+openocd: $(RISCV_OPENOCD)
+
+$(RISCV_OPENOCD): $(openocd_builddir)/install.stamp
+	touch -c $@
+
+$(openocd_builddir)/install.stamp: $(openocd_builddir)/build.stamp
+	$(MAKE) -C $(dir $@) install
+	date > $@
+
+$(openocd_builddir)/build.stamp: $(openocd_builddir)/configure.stamp
+	$(MAKE) -C $(dir $@)
+	date > $@
+
+$(openocd_builddir)/configure.stamp:
+	rm -rf $(dir $@)
+	mkdir -p $(dir $@)
+	cd $(abspath $(openocd_srcdir)); autoreconf -i
+	cd $(dir $@); $(abspath $(openocd_srcdir)/configure) \
+		--prefix=$(abspath $(dir $@)/prefix) \
+		--disable-werror
+	date > $@
+
+.PHONY: 
+clean: 
+
 
 #############################################################
 # This Section is for Software Compilation
