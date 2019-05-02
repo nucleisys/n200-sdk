@@ -19,9 +19,10 @@ SECTIONS
     KEEP (*(SORT_NONE(.init)))
   } >ilm AT>ilm 
 
+  . = ALIGN(4);
+
   .ilalign         :
   {
-    . = ALIGN(4);
     PROVIDE( _ilm_lma = . );
   } >ilm AT>ilm 
 
@@ -105,8 +106,6 @@ SECTIONS
     KEEP (*(.dtors))
   } >ilm AT>ilm 
 
-    . = ALIGN(4);
-    PROVIDE( _eilm = . );
 
   .lalign         :
   {
@@ -129,7 +128,7 @@ SECTIONS
     *(.gnu.linkonce.d.*)
     . = ALIGN(8);
     PROVIDE( __global_pointer$ = . + 0x800 );
-    *(.sdata .sdata.*)
+    *(.sdata .sdata.* .sdata*)
     *(.gnu.linkonce.s.*)
     . = ALIGN(8);
     *(.srodata.cst16)
