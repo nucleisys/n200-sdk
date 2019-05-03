@@ -102,3 +102,12 @@ disable_mcycle_minstret:
 enable_mcycle_minstret:
     csrci CSR_MCOUNTINHIBIT, 0x5
 	ret
+
+	.global core_wfe
+core_wfe:
+    csrc CSR_MSTATUS, MSTATUS_MIE
+    csrs CSR_WFE, 0x1
+    wfi
+    csrc CSR_WFE, 0x1
+    csrs CSR_MSTATUS, MSTATUS_MIE
+	ret

@@ -209,17 +209,17 @@ uint8_t eclic_get_nlbits() {
 }
 
 //sets an interrupt level based encoding of nlbits and ECLICINTCTLBITS
-uint8_t eclic_set_int_level(uint32_t source, uint8_t level) {
+void eclic_set_irq_lvl(uint32_t source, uint8_t lvl) {
   //extract nlbits
   uint8_t nlbits = eclic_get_nlbits();
   if (nlbits > ECLICINTCTLBITS) {
     nlbits = ECLICINTCTLBITS; 
   }
 
-  //shift level right to mask off unused bits
-  level = level >> (8-nlbits);
-  //shift level into correct bit position
-  level = level << (8-nlbits);
+  //shift lvl right to mask off unused bits
+  lvl = lvl >> (8-nlbits);
+  //shift lvl into correct bit position
+  lvl = lvl << (8-nlbits);
  
   //write to clicintctrl
   uint8_t current_intctrl = eclic_get_intctrl(source);
@@ -228,13 +228,11 @@ uint8_t eclic_set_int_level(uint32_t source, uint8_t level) {
   //shift intctrl into correct bit position
   current_intctrl = current_intctrl >> nlbits;
 
-  eclic_set_intctrl(source, (current_intctrl | level));
-
-  return level;
+  eclic_set_intctrl(source, (current_intctrl | lvl));
 }
 
 //gets an interrupt level based encoding of nlbits
-uint8_t eclic_get_int_level(uint32_t source) {
+uint8_t eclic_get_irq_lvl(uint32_t source) {
   //extract nlbits
   uint8_t nlbits = eclic_get_nlbits();
   if (nlbits > ECLICINTCTLBITS) {
@@ -246,9 +244,46 @@ uint8_t eclic_get_int_level(uint32_t source) {
   //shift intctrl
   intctrl = intctrl >> (8-nlbits);
   //shift intctrl
-  uint8_t level = intctrl << (8-nlbits);
+  uint8_t lvl = intctrl << (8-nlbits);
 
-  return level;
+  return lvl;
+}
+
+void eclic_set_irq_lvl_abs(uint32_t source, uint8_t lvl_abs) {
+  //extract nlbits
+  uint8_t nlbits = eclic_get_nlbits();
+  if (nlbits > ECLICINTCTLBITS) {
+    nlbits = ECLICINTCTLBITS; 
+  }
+
+  //shift lvl_abs into correct bit position
+  uint8_t lvl = lvl_abs << (8-nlbits);
+ 
+  //write to clicintctrl
+  uint8_t current_intctrl = eclic_get_intctrl(source);
+  //shift intctrl left to mask off unused bits
+  current_intctrl = current_intctrl << nlbits;
+  //shift intctrl into correct bit position
+  current_intctrl = current_intctrl >> nlbits;
+
+  eclic_set_intctrl(source, (current_intctrl | lvl));
+}
+
+uint8_t eclic_get_irq_lvl_abs(uint32_t source) {
+  //extract nlbits
+  uint8_t nlbits = eclic_get_nlbits();
+  if (nlbits > ECLICINTCTLBITS) {
+    nlbits = ECLICINTCTLBITS; 
+  }
+
+  uint8_t intctrl = eclic_get_intctrl(source);
+
+  //shift intctrl
+  intctrl = intctrl >> (8-nlbits);
+  //shift intctrl
+  uint8_t lvl_abs = intctrl;
+
+  return lvl_abs;
 }
 
 void eclic_mode_enable() {
@@ -263,7 +298,7 @@ void eclic_set_vmode(uint32_t source) {
   //read the current attr 
   uint8_t old_intattr = eclic_get_intattr(source);
       // Keep other bits unchanged and only set the LSB bit
-  uint8_t new_intattr = (old_intattr & (~0x1)) | (0x1); 
+  uint8_t new_intattr = (old_intattr | 0x1); 
 
   eclic_set_intattr(source,new_intattr);
 }
@@ -272,10 +307,47 @@ void eclic_set_nonvmode(uint32_t source) {
   //read the current attr 
   uint8_t old_intattr = eclic_get_intattr(source);
       // Keep other bits unchanged and only clear the LSB bit
-  uint8_t new_intattr = (old_intattr & (~0x1)) | (~0x1); 
+  uint8_t new_intattr = (old_intattr & (~0x1));
 
   eclic_set_intattr(source,new_intattr);
 }
 
+//sets interrupt as level sensitive
+//Bit 1, trig[0], is defined as "edge-triggered" (0: level-triggered, 1: edge-triggered); 
+//Bit 2, trig[1], is defined as "negative-edge" (0: positive-edge, 1: negative-edge).
 
-__attribute__((weak)) void MTIME_HANDLER(){}
+void eclic_set_level_trig(uint32_t source) {
+  //read the current attr 
+  uint8_t old_intattr = eclic_get_intattr(source);
+      // Keep other bits unchanged and only clear the bit 1
+  uint8_t new_intattr = (old_intattr & (~0x2));
+
+  eclic_set_intattr(source,new_intattr);
+}
+
+void eclic_set_posedge_trig(uint32_t source) {
+  //read the current attr 
+  uint8_t old_intattr = eclic_get_intattr(source);
+      // Keep other bits unchanged and only set the bit 1
+  uint8_t new_intattr = (old_intattr | 0x2);
+      // Keep other bits unchanged and only clear the bit 2
+  new_intattr = (old_intattr & (~0x4));
+
+  eclic_set_intattr(source,new_intattr);
+}
+
+void eclic_set_negedge_trig(uint32_t source) {
+  //read the current attr 
+  uint8_t old_intattr = eclic_get_intattr(source);
+      // Keep other bits unchanged and only set the bit 1
+  uint8_t new_intattr = (old_intattr | 0x2);
+      // Keep other bits unchanged and only set the bit 2
+  new_intattr = (old_intattr | 0x4);
+
+  eclic_set_intattr(source,new_intattr);
+}
+
+void wfe() {
+  core_wfe();
+}
+

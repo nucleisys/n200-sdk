@@ -185,9 +185,9 @@ void config_eclic_irqs (){
 
   eclic_set_nlbits(3);
   //  The button have higher level
-  eclic_set_int_level(ECLIC_INT_MTIP, 1<<(8-3));
-  eclic_set_int_level(ECLIC_INT_DEVICE_BUTTON_1, 2<<(8-3));
-  eclic_set_int_level(ECLIC_INT_DEVICE_BUTTON_2, 3<<(8-3));
+  eclic_set_irq_lvl_abs(ECLIC_INT_MTIP, 1);
+  eclic_set_irq_lvl_abs(ECLIC_INT_DEVICE_BUTTON_1, 2);
+  eclic_set_irq_lvl_abs(ECLIC_INT_DEVICE_BUTTON_2, 3);
 
   //  The MTIME using Vector-Mode
   eclic_set_vmode(ECLIC_INT_MTIP);

@@ -59,13 +59,20 @@ void eclic_set_nlbits(uint8_t nlbits);
 //get nlbits 
 uint8_t eclic_get_nlbits();
 
-uint8_t eclic_set_int_level(uint32_t source, uint8_t level);
-uint8_t eclic_get_int_level(uint32_t source);
+void eclic_set_irq_lvl(uint32_t source, uint8_t lvl);
+uint8_t eclic_get_irq_lvl(uint32_t source);
+
+void eclic_set_irq_lvl_abs(uint32_t source, uint8_t lvl_abs);
+uint8_t eclic_get_irq_lvl_abs(uint32_t source);
 
 void eclic_mode_enable();
 
 void eclic_set_vmode(uint32_t source);
 void eclic_set_nonvmode(uint32_t source);
+
+void eclic_set_level_trig(uint32_t source);
+void eclic_set_posedge_trig(uint32_t source);
+void eclic_set_negedge_trig(uint32_t source);
 
 __END_DECLS
 
