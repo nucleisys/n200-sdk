@@ -19,10 +19,10 @@ SECTIONS
     KEEP (*(SORT_NONE(.init)))
   } >ilm AT>ilm 
 
-  . = ALIGN(4);
 
   .ilalign         :
   {
+    . = ALIGN(4);
     PROVIDE( _ilm_lma = . );
   } >ilm AT>ilm 
 

@@ -19,10 +19,10 @@ SECTIONS
     KEEP (*(SORT_NONE(.init)))
   } >flash AT>flash 
 
-  . = ALIGN(4);
 
   .ilalign         :
   {
+    . = ALIGN(4);
     PROVIDE( _ilm_lma = . );
   } >flash AT>flash 
 
