@@ -8,7 +8,7 @@
   //   SOC_ECLIC_NUM_INTERRUPTS : how much of irq configured in total for the ECLIC in this SoC
 #include "soc/drivers/soc.h"
 
-#define ECLICINTCTLBITS  8
+#define CLICINTCTLBITS  3
 
 //ECLIC memory map
 //   Offset

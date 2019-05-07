@@ -208,12 +208,12 @@ uint8_t eclic_get_nlbits() {
   nlbits = (nlbits & ECLIC_CFG_NLBITS_MASK) >> ECLIC_CFG_NLBITS_LSB;
 }
 
-//sets an interrupt level based encoding of nlbits and ECLICINTCTLBITS
+//sets an interrupt level based encoding of nlbits and CLICINTCTLBITS
 void eclic_set_irq_lvl(uint32_t source, uint8_t lvl) {
   //extract nlbits
   uint8_t nlbits = eclic_get_nlbits();
-  if (nlbits > ECLICINTCTLBITS) {
-    nlbits = ECLICINTCTLBITS; 
+  if (nlbits > CLICINTCTLBITS) {
+    nlbits = CLICINTCTLBITS; 
   }
 
   //shift lvl right to mask off unused bits
@@ -235,8 +235,8 @@ void eclic_set_irq_lvl(uint32_t source, uint8_t lvl) {
 uint8_t eclic_get_irq_lvl(uint32_t source) {
   //extract nlbits
   uint8_t nlbits = eclic_get_nlbits();
-  if (nlbits > ECLICINTCTLBITS) {
-    nlbits = ECLICINTCTLBITS; 
+  if (nlbits > CLICINTCTLBITS) {
+    nlbits = CLICINTCTLBITS; 
   }
 
   uint8_t intctrl = eclic_get_intctrl(source);
@@ -252,8 +252,8 @@ uint8_t eclic_get_irq_lvl(uint32_t source) {
 void eclic_set_irq_lvl_abs(uint32_t source, uint8_t lvl_abs) {
   //extract nlbits
   uint8_t nlbits = eclic_get_nlbits();
-  if (nlbits > ECLICINTCTLBITS) {
-    nlbits = ECLICINTCTLBITS; 
+  if (nlbits > CLICINTCTLBITS) {
+    nlbits = CLICINTCTLBITS; 
   }
 
   //shift lvl_abs into correct bit position
@@ -272,8 +272,8 @@ void eclic_set_irq_lvl_abs(uint32_t source, uint8_t lvl_abs) {
 uint8_t eclic_get_irq_lvl_abs(uint32_t source) {
   //extract nlbits
   uint8_t nlbits = eclic_get_nlbits();
-  if (nlbits > ECLICINTCTLBITS) {
-    nlbits = ECLICINTCTLBITS; 
+  if (nlbits > CLICINTCTLBITS) {
+    nlbits = CLICINTCTLBITS; 
   }
 
   uint8_t intctrl = eclic_get_intctrl(source);
