@@ -48,6 +48,8 @@
 #define ECLIC_INT_MTIP          7
 #define ECLIC_INT_MEIP          11
 
+#define BUTTON_1_HANDLER eclic_irq49_handler
+
 #define MTIME_HANDLER   eclic_mtip_handler
 #define SSIP_HANDLER    eclic_ssip_handler 
 #define MSIP_HANDLER    eclic_msip_handler 
@@ -63,3 +65,4 @@
 
 
 #endif
+

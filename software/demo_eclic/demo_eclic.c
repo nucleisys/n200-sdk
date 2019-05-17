@@ -31,9 +31,9 @@
 #define MTIME_HANDLER   eclic_mtip_handler
 
 #define SAVE_STATUS_IRQ_VECTOR \
-  long mcause = read_csr(mcause);\
-  long mepc = read_csr(mepc);\
-  long msubm = read_csr(0x7c4);\
+  uint32_t mcause = read_csr(mcause);\
+  uint32_t mepc = read_csr(mepc);\
+  uint32_t msubm = read_csr(0x7c4);\
   set_csr(mstatus, MSTATUS_MIE); \
 
 
