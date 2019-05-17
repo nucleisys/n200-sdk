@@ -13,6 +13,7 @@
 #include "n200/drivers/riscv_encoding.h"
 #include "n200/drivers/n200_timer.h"
 #include "n200/drivers/n200_eclic.h"
+#include "n200/drivers/riscv_bits.h"
 
 #define BUTTON_1_GPIO_OFFSET 30
 #define BUTTON_2_GPIO_OFFSET 31
@@ -23,9 +24,24 @@
 //#define ECLIC_INT_DEVICE_BUTTON_1 49 // 30+19
 //#define ECLIC_INT_DEVICE_BUTTON_2 50 // 31+19
 
+
 // Since the BUTTON_1 ECLIC IRQ number is 49, and BUTTON_2 is 50, we need to overriede the irq49/50 handler 
-#define BUTTON_1_HANDLER eclic_irq49_handler
+//#define BUTTON_1_HANDLER eclic_irq49_handler
 #define BUTTON_2_HANDLER eclic_irq50_handler
+#define MTIME_HANDLER   eclic_mtip_handler
+
+#define SAVE_STATUS_IRQ_VECTOR \
+  long mcause = read_csr(mcause);\
+  long mepc = read_csr(mepc);\
+  long msubm = read_csr(0x7c4);\
+  set_csr(mstatus, MSTATUS_MIE); \
+
+
+#define RESTORE_STATUS_IRQ_VECTOR  \
+  clear_csr(mstatus, MSTATUS_MIE);\
+  write_csr(0x7c4, msubm);\
+  write_csr(mepc, mepc);\
+  write_csr(mcause, mcause); \
 
 
 void reset_demo (void);
@@ -53,13 +69,15 @@ void wait_seconds(size_t n)
 
 
 /*Entry Point for Machine Timer Interrupt Handler*/
-void __attribute__ ((interrupt)) MTIME_HANDLER(){
+  //  Can only enable this attribute if the toolchain support it
+//void __attribute__ ((interrupt)) MTIME_HANDLER(){
+void MTIME_HANDLER(){
 
   #ifdef CFG_SIMULATION
     // Use write functions instead of printf because it will be much faster in simulation
   write (STDOUT_FILENO, "Begin mtime handler\n", strlen("Begin mtime handler\n"));
   #else
-  printf ("%s","Begin mtime handler\n");
+  printf ("%s","Begin mtime handler----NonVector mode\n");
   #endif
   GPIO_REG(GPIO_OUTPUT_VAL) ^= (0x1 << RED_LED_GPIO_OFFSET);
 
@@ -125,14 +143,18 @@ This is printf function printed:  \n\
  ";
 
 
+//
 
 
-void BUTTON_1_HANDLER(void) {
 
+void __attribute__ ((interrupt)) BUTTON_1_HANDLER(void) {
+   //save mepc,mcause,msubm enable interrupts
+  SAVE_STATUS_IRQ_VECTOR;
+ 
   #ifdef CFG_SIMULATION
   write (STDOUT_FILENO, "----Begin button1 handler\n", strlen("----Begin button1 handler\n"));
   #else
-  printf ("%s","----Begin button1 handler\n");
+  printf ("%s","----Begin button1 handler----Vector mode\n");
   #endif
 
   // Green LED On
@@ -147,7 +169,11 @@ void BUTTON_1_HANDLER(void) {
   wait_seconds(5);// Wait for a while
 
   printf ("%s","----End button1 handler\n");
+
   #endif
+  //disable interrupts,restore mepc,mcause,msubm 
+  RESTORE_STATUS_IRQ_VECTOR;
+  
 };
 
 
@@ -156,7 +182,7 @@ void BUTTON_2_HANDLER(void) {
   #ifdef CFG_SIMULATION
   write (STDOUT_FILENO, "----------Begin button2 handler\n", strlen("----------Begin button2 handler\n"));
   #else
-  printf ("%s","--------Begin button2 handler\n");
+  printf ("%s","--------Begin button2 handler----NonVector mode\n");
   #endif
 
   // Blue LED On
@@ -185,12 +211,13 @@ void config_eclic_irqs (){
 
   eclic_set_nlbits(3);
   //  The button have higher level
-  eclic_set_irq_lvl_abs(ECLIC_INT_MTIP, 1);
+ eclic_set_irq_lvl_abs(ECLIC_INT_MTIP, 1);
   eclic_set_irq_lvl_abs(ECLIC_INT_DEVICE_BUTTON_1, 2);
   eclic_set_irq_lvl_abs(ECLIC_INT_DEVICE_BUTTON_2, 3);
 
-  //  The MTIME using Vector-Mode
-  eclic_set_vmode(ECLIC_INT_MTIP);
+  //  The BUTTON1 using Vector-Mode
+  //  Can only enable this mode if the toolchain support it
+  eclic_set_vmode(ECLIC_INT_DEVICE_BUTTON_1);
  } 
 
 
@@ -258,10 +285,7 @@ int main(int argc, char **argv)
   printf ("\n\r");
   printf ("%s","\nThank you for supporting RISC-V, you will see the blink soon on the board!\n");
 
-  
-
-
-
+ 
   config_eclic_irqs();
 
   setup_mtime();

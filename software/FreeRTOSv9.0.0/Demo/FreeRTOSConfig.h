@@ -80,12 +80,12 @@ your application. */
 #define configUSE_TICKLESS_IDLE                 0
 #define configCPU_CLOCK_HZ                      265000000
 #define configRTC_CLOCK_HZ						32768
-#define configTICK_RATE_HZ                      250
-#define configMAX_PRIORITIES                    3
+#define configTICK_RATE_HZ                      200
+#define configMAX_PRIORITIES                    4
 #define configMINIMAL_STACK_SIZE                450
 #define configMAX_TASK_NAME_LEN                 16
 #define configUSE_16_BIT_TICKS                  0
-#define configIDLE_SHOULD_YIELD                 1
+#define configIDLE_SHOULD_YIELD                 0
 #define configUSE_TASK_NOTIFICATIONS            1
 #define configUSE_MUTEXES                       1
 #define configUSE_RECURSIVE_MUTEXES             0
@@ -105,7 +105,7 @@ your application. */
 
 /* Hook function related definitions. */
 #define configUSE_IDLE_HOOK                     1
-#define configUSE_TICK_HOOK                     1
+#define configUSE_TICK_HOOK                     0
 #define configCHECK_FOR_STACK_OVERFLOW          1
 #define configUSE_MALLOC_FAILED_HOOK            1
 #define configUSE_DAEMON_TASK_STARTUP_HOOK      0
@@ -130,7 +130,7 @@ your application. */
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY    [dependent on processor and application]
 #define configMAX_API_CALL_INTERRUPT_PRIORITY   [dependent on processor and application]
 */
-
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY    6
 //#define portCRITICAL_NESTING_IN_TCB				1
 
 /* Define to trap errors during development. */

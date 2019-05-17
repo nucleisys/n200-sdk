@@ -144,7 +144,11 @@ extern void vPortClearInterruptMask( int uxSavedStatusValue ); //in port.c
 
 /* Scheduler utilities. */
 /* the return after the ECALL is VERY important */
+
 #define portYIELD() ECALL(PORT_YIELD);
+
+#define portYIELD_FROM_ISR(x)  if(x!=0)  {portYIELD();   printf("portYIELD \n");}
+       
 
 
 /* Critical section management. */
@@ -152,8 +156,8 @@ extern void vPortEnterCritical( void );
 extern void vPortExitCritical( void );
 #define portSET_INTERRUPT_MASK_FROM_ISR()       xPortSetInterruptMask()
 #define portCLEAR_INTERRUPT_MASK_FROM_ISR( uxSavedStatusValue )       vPortClearInterruptMask( uxSavedStatusValue )
-#define portDISABLE_INTERRUPTS()				clear_csr(mstatus,MSTATUS_MIE)
-#define portENABLE_INTERRUPTS()					set_csr(mstatus, MSTATUS_MIE)
+#define portDISABLE_INTERRUPTS()			    clear_csr(mstatus,MSTATUS_MIE);
+#define portENABLE_INTERRUPTS()					set_csr(mstatus, MSTATUS_MIE);
 #define portENTER_CRITICAL()					vPortEnterCritical()
 #define portEXIT_CRITICAL()						vPortExitCritical()
 

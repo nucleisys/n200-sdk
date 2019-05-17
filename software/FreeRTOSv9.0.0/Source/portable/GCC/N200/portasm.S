@@ -71,19 +71,19 @@
     1 tab == 4 spaces!
 */
 
+//#include "n200/drivers/n200_func.h"
+#include "soc/drivers/soc.h"
+#include "soc/drivers/board.h"
 #include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/riscv_bits.h"
-#include "n200/drivers/n200_pic_tmr.h"
+#include "n200/drivers/n200_timer.h"
+#include "n200/drivers/n200_eclic.h"
 
-//#if __riscv_xlen == 64
-//# define STORE    sd
-//# define LOAD     ld
-//# define REGBYTES 8
-//#else
-//# define STORE    sw
-//# define LOAD     lw
-//# define REGBYTES 4
-//#endif
+//#include "portmacro.h"
+
+# define STORE    sw
+# define LOAD     lw
+# define REGBYTES 4
+
 
 #define INT_MASK 0x7FFFFFFF
 
@@ -92,18 +92,15 @@
 
 .global portSAVE_CONTEXT
 .global portRESTORE_CONTEXT
-.global portMTIME_INT
-.global portSAVE_RA
 .global xPortStartScheduler
 .global vPortYield
-.global vTaskIncrementTick
 .global vPortEndScheduler
-.global xExitStack
+.global DISABLE_MIE
 
 /* Macro for saving task context */
 .macro pushREGFILE
 	/* make room in stack */
-	addi	sp, sp, -REGBYTES * 34
+	addi	sp, sp, -REGBYTES * 36
 
 	/* Save Context */
 	STORE	x1, 1 * REGBYTES(sp)
@@ -142,7 +139,7 @@
 
 .macro pushREGFILE_Caller
 	/* make room in stack */
-	addi	sp, sp, -REGBYTES * 34
+	addi	sp, sp, -REGBYTES * 36
 
 	/* Save Context */
 	STORE	x1, 1 * REGBYTES(sp)
@@ -187,7 +184,7 @@
 	STORE	x2, 2 * REGBYTES(sp)
 	////STORE	x3, 3 * REGBYTES(sp)
 	STORE	x4, 4 * REGBYTES(sp)
-	//STORE	x5, 5 * REGBYTES(sp)
+//	STORE	x5, 5 * REGBYTES(sp)
 	//STORE	x6, 6 * REGBYTES(sp)
 	//STORE	x7, 7 * REGBYTES(sp)
 	STORE	x8, 8 * REGBYTES(sp)
@@ -221,83 +218,26 @@
 /*saves mstatus and tcb	*/
 .macro portSAVE_CONTEXT_EXCP
 	.global	pxCurrentTCB
-		/* Store mstatus */
-	csrr	t0, mstatus	//pointer
+	/* Store mstatus */
+	csrr	t0, CSR_MSTATUS	//pointer
 	STORE	t0, 32 * REGBYTES(sp)
 
+	csrr t0, CSR_MSUBM  
+  	STORE t0,  34*REGBYTES(sp)
+
+	
 	/* Store current stackpointer in task control block (TCB) */
 	LOAD	t0, pxCurrentTCB	//pointer
 	STORE	sp, 0x0(t0)
 .endm
 
 
-/*saves istatus and tcb	*/
-.macro portSAVE_CONTEXT_IRQ
-	.global	pxCurrentTCB
-		/* Store istatus */
-	csrr	t0, CSR_ISTATUS	//pointer
-	STORE	t0, 32 * REGBYTES(sp)
-
-	/* Store current stackpointer in task control block (TCB) */
-	LOAD	t0, pxCurrentTCB	//pointer
-	STORE	sp, 0x0(t0)
-.endm
 
 
-/* Saves current error program counter (EPC) as task program counter */
-.macro portSAVE_EPC
-  	csrr	t0, mepc
-	STORE	t0, 33 * REGBYTES(sp)
 
-.endm
 
-/* Saves current interrupt program counter (IPC) as task program counter */
-.macro portSAVE_IPC
-  	csrr	t0, CSR_MIPC
-	STORE	t0, 33 * REGBYTES(sp)
 
-.endm
 
-/* Saves current return adress (RA) as task program counter */
-.macro portSAVE_RA
-	LOAD	t0, 1 * REGBYTES(sp)
-	STORE	t0, 33 * REGBYTES(sp)
-
-.endm
-
-//not called on a context switch
-.macro portRESTORE_X2
-	LOAD 	x2, 2 * REGBYTES(sp)
-	//LOAD 	x3, 3 * REGBYTES(sp)
- .endm
-
- /*restore mstatus/mepc and tcb	*/
-.macro portRESTORE_CONTEXT_EXCP
-	.global	pxCurrentTCB
-	/* Load stack pointer from the current TCB */
-	LOAD	sp, pxCurrentTCB
-	LOAD	sp, 0x0(sp)
-	/* Load task program counter */
-	LOAD	t0, 33 * REGBYTES(sp)
-  	csrw	mepc, t0
-	/* Load saved mstatus */
-	LOAD	t0, 32 * REGBYTES(sp)
-  	csrw	mstatus, t0
-.endm
-
- /*restore istatus/ipc and tcb	*/
-.macro portRESTORE_CONTEXT_IRQ
-	.global	pxCurrentTCB
-	/* Load stack pointer from the current TCB */
-	LOAD	sp, pxCurrentTCB
-	LOAD	sp, 0x0(sp)
-	/* Load task program counter */
-	LOAD	t0, 33 * REGBYTES(sp)
-  	csrw	CSR_MIPC, t0
-	/* Load saved istatus */
-	LOAD	t0, 32 * REGBYTES(sp)
-  	csrw	CSR_ISTATUS, t0
-.endm
 
 
 /* Macro for restoring task context */
@@ -336,7 +276,7 @@
 	LOAD	x30, 30 * REGBYTES(sp)
 	LOAD	x31, 31 * REGBYTES(sp)
 
-	addi	sp, sp, REGBYTES * 34
+	addi	sp, sp, REGBYTES * 36
 .endm
 
 .macro popREGFILE_Caller
@@ -374,17 +314,87 @@
 	LOAD	x30, 30 * REGBYTES(sp)
 	LOAD	x31, 31 * REGBYTES(sp)
 
-	addi	sp, sp, REGBYTES * 34
+	addi	sp, sp, REGBYTES * 36
+.endm
+###############################################
+
+###############################################
+	
+ /*restore mstatus/mepc and tcb	*/
+.macro portRESTORE_CONTEXT_EXCP
+	.global	pxCurrentTCB
+	/* Load stack pointer from the current TCB */
+	LOAD	sp, pxCurrentTCB
+	LOAD	sp, 0x0(sp)
+	/* Load task program counter */
+	LOAD t0,  34*REGBYTES(sp)
+  	csrw CSR_MSUBM, t0   
+	LOAD t0,  33*REGBYTES(sp)
+  	csrw CSR_MEPC, t0  
+  	LOAD t0,  32*REGBYTES(sp)
+  	csrw CSR_MSTATUS, t0 
 .endm
 
 
+
+/*saves istatus and tcb	*/
+.macro portSAVE_CONTEXT_IRQ
+	.global	pxCurrentTCB
+	/* Store status */
+	csrr t0, CSR_MSTATUS  
+  	STORE t0,  32*REGBYTES(sp)
+	csrr t0,   CSR_MEPC
+	STORE t0,  33*REGBYTES(sp)
+  	csrr t0,   CSR_MSUBM
+  	STORE t0,  34*REGBYTES(sp)
+	csrr t0,  CSR_MCAUSE 
+  	STORE t0,  35*REGBYTES(sp)
+
+	/* Store current stackpointer in task control block (TCB) */
+//	LOAD	t0, pxCurrentTCB	//pointer
+//	STORE	sp, 0x0(t0)
+.endm
+
+
+
+ /*restore istatus/ipc and tcb	*/
+.macro portRESTORE_CONTEXT_IRQ
+	.global	pxCurrentTCB
+	/* Load stack pointer from the current TCB */
+//	LOAD	sp, pxCurrentTCB
+//	LOAD	sp, 0x0(sp)
+	#---- Critical section with interrupts disabled -----------------------
+   	# Disable interrupts 
+	
+ 	
+	LOAD t0,  35*REGBYTES(sp)
+  	csrw  CSR_MCAUSE, t0   
+	LOAD t0,  34*REGBYTES(sp)
+  	csrw CSR_MSUBM, t0 
+	LOAD t0,  33*REGBYTES(sp)
+  	csrw CSR_MEPC, t0  
+  	LOAD t0,  32*REGBYTES(sp)
+  	csrw CSR_MSTATUS, t0 
+.endm  
+
+###############################################
+# Disable Interrupt
+#
+.macro DISABLE_MIE
+  	csrc CSR_MSTATUS, MSTATUS_MIE  
+.endm
+
+
+###############################################
+
 /* Interrupt entry point */
 .global trap_entry
+.align 6
 trap_entry:
 	/* Check for interrupt */
 	pushREGFILE
 	csrr	a0, mcause
-    //Bob: we dont need to check interrupt here because N200 have seperated entry to IRQ
+    	//Bob: we dont need to check interrupt here because N200 have seperated entry to IRQ
 	//blt		a0,zero,interrupt
 
 	/* synchronous interrupt*/
@@ -392,133 +402,97 @@ trap_entry:
 	/* pass sp in a1 */
 	mv a1,sp
 	jal ulSynchTrap
-/*  adjust stack pointer back to where it was prior to ulSynchTrap  */
+	/*  adjust stack pointer back to where it was prior to ulSynchTrap  */
 	mv		sp,a0
 	popREGFILE
 	mret
 
 ###############################################
 ###############################################
-# Save the mipc and istatus
-#
-.macro SAVE_MIPC_ISTATUS
-  csrr t0, CSR_MIPC  
-  STORE t0,  32*REGBYTES(sp)
-  csrr t0, CSR_ISTATUS  
-  STORE t0,  33*REGBYTES(sp)
-.endm
-
-###############################################
-###############################################
-# Restore the mipc and istatus
-#
-.macro RESTORE_MIPC_ISTATUS
-  LOAD t0,  32*REGBYTES(sp)
-  csrw CSR_MIPC, t0  
-  LOAD t0,  33*REGBYTES(sp)
-  csrw CSR_ISTATUS, t0  
-.endm
 
 /* async interrupt, this function is called */
-//Bob: Rename this to irq_entry to make it override the weak symbol from BSP's entry.S
+//Bob: Rename this to irq_entry to make it override the weak symbol from BSPs entry.S
 //interrupt:
+.align 2
 .global irq_entry
-irq_entry:
-        //Bob: only save the caller
-    	pushREGFILE_Caller
+irq_entry: // -------------> This label will be set to MTVT2 register
+  	// Allocate the stack space
+  	pushREGFILE
+	csrr	t0, CSR_MSTATUS	
+	STORE	t0, 32 * REGBYTES(sp)
+  	csrr t0,   CSR_MEPC
+  	STORE t0,  33*REGBYTES(sp)
+  	csrr t0,   CSR_MSUBM
+  	STORE t0,  34*REGBYTES(sp)
+	csrr t0,   CSR_MCAUSE
+  	STORE t0,  35*REGBYTES(sp)
+	
+	
+int_loop:             // 3 instructions in pending-interrupt service loop.
+  	csrrw ra, CSR_JALMNXTI, ra    
+        
+  	csrrsi a0, CSR_MNXTI, MSTATUS_MIE   // Claim any pending interrupt at level > mcause.pil 
+  	bnez a0, int_loop   // Loop to service any interrupt. 
 
-//Bob: Update to support interrupt nesting to save MIPC and IStatus
-  // Save the MIPC/IStatus reg
-    SAVE_MIPC_ISTATUS
+  	#---- Critical section with interrupts disabled -----------------------
+  	DISABLE_MIE # Disable interrupts
+  
+ 	
+	LOAD t0,  35*REGBYTES(sp)
+  	csrw CSR_MCAUSE, t0   
+	LOAD t0,  34*REGBYTES(sp)
+  	csrw CSR_MSUBM, t0 
+	LOAD t0,  33*REGBYTES(sp)
+  	csrw CSR_MEPC, t0  
+  	LOAD t0,  32*REGBYTES(sp)
+ 	csrw CSR_MSTATUS, t0 
 
-//Bob: Update the way to check the MTIME
-	//li      t0,INT_MASK
-	//and     a0,a0,t0
-	//li      t0, 0x7
-	//beq     a0,t0, MTIME_IRQ
-call_irq:
-//Bob: Claim the IRQ
-    li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
-    lw a0, 0(t0)
-	/* Bob: Interupt m-time interrupt */
-    li t0, PIC_INT_TMR
-	beq a0,t0, MTIME_IRQ
+  	popREGFILE
+  	mret
 
-	/* Interupt not m-time interrupt */
-	/* pass the exception code in a0 */
-	//jal 	handle_interrupt
-
-    //Bob: change to jump to handle_irq
-  // a0 as the function argument
-	jal 	handle_irq
-//Bob: Update the rest of code
-	//portRESTORE_X2
-
-  //Complete the IRQ
-  // a0 as the return value
-  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
-  sw a0, 0(t0)
-
-
-  // Check if there is pending irq to support interrupt tailing
-  li t0, (PIC_CTRL_ADDR + PIC_EIP_OFFSET)// Use t0(x5) as the address register
-  lw t0, 0(t0)// Read the value from PIC EIP reg
-  bnez t0, call_irq // If the EIP reg is not zero, means there is a pending register
-
-  // Restore the MIPC/IStatus reg
-  RESTORE_MIPC_ISTATUS
-
-	popREGFILE_Caller
-	mret
-
-
-//Bob: MTIME_IRQ is special which need to used to switch context, hence need to use special macro
-	/* Interupt is m-time  */
-MTIME_IRQ:
-        //Bob: We need to save the callee before switching the context
-    	pushREGFILE_Callee
-	portSAVE_CONTEXT_IRQ
-    // Bob: change the MEPC to MIPC
-	//portSAVE_EPC
-	portSAVE_IPC
-    // a0 as the function argument
+.align 2
+.globl MTIME_HANDLER
+MTIME_HANDLER:   
+  	pushREGFILE   
+	portSAVE_CONTEXT_IRQ  
+	
+	csrs CSR_MSTATUS, MSTATUS_MIE  
 	jal		vPortSysTickHandler
+	csrc CSR_MSTATUS, MSTATUS_MIE  
 
-  //Complete the IRQ
-  // a0 as the return value
-  li t0, (PIC_CTRL_ADDR + PIC_CLAIM_OFFSET)
-  sw a0, 0(t0)
-
-    // Bob: change the MEPC to MIPC
-	//portRESTORE_CONTEXT
 	portRESTORE_CONTEXT_IRQ
 	popREGFILE
+	
 	mret
 
 xPortStartScheduler:
 	jal		vPortSetup
-	portRESTORE_CONTEXT_EXCP //Bob: ?? I deleted this but I am not so sure about this
+	portRESTORE_CONTEXT_EXCP 
+	
 	popREGFILE
+	
 	mret
 
 
+
+.align 6
 vPortYield:
-/*  adjust stack pointer back to where it was prior to ulSynchTrap  */
 	mv		sp,a0
-	portSAVE_EPC//Bob: ?? I added it to here, but not very sure
+	
 	portSAVE_CONTEXT_EXCP
 
-/* context return point was passed back to this function in a1 */
 	STORE	a1, 33 * REGBYTES(sp)
-    /* switch context */
 	jal		vTaskSwitchContext
+
 	portRESTORE_CONTEXT_EXCP
-	popREGFILE
+	popREGFILE  
+
 	mret
 
 vPortEndScheduler:
 1:
-	j		1b
+ j 1b
+
 
 
 //Bob: we dont need this
@@ -526,7 +500,6 @@ vPortEndScheduler:
 //handle_interrupt:
 //1:
   j 1b
-
 
 
 

@@ -84,98 +84,128 @@ here. */
 #include "soc/drivers/soc.h"
 #include "soc/drivers/board.h"
 #include "n200/drivers/riscv_encoding.h"
-#include "n200/drivers/n200_pic_tmr.h"
+#include "n200/drivers/n200_timer.h"
 
-/* Priorities at which the tasks are created.  The event semaphore task is
-given the maximum priority of ( configMAX_PRIORITIES - 1 ) to ensure it runs as
-soon as the semaphore is given. */
 #define mainQUEUE_RECEIVE_TASK_PRIORITY     ( tskIDLE_PRIORITY + 2 )
 #define mainQUEUE_SEND_TASK_PRIORITY        ( tskIDLE_PRIORITY + 1 )
 #define mainEVENT_SEMAPHORE_TASK_PRIORITY   ( configMAX_PRIORITIES - 1 )
 
-/* The rate at which data is sent to the queue, specified in milliseconds, and
-converted to ticks using the pdMS_TO_TICKS() macro. */
-#define mainQUEUE_SEND_PERIOD_MS            pdMS_TO_TICKS( 200 )
+#define NBIT_DEFAULT  3
+#define REG_LEN       8
+
 
 /* The period of the example software timer, specified in milliseconds, and
 converted to ticks using the pdMS_TO_TICKS() macro. */
 #define mainSOFTWARE_TIMER_PERIOD_MS        pdMS_TO_TICKS( 1000 )
 
-/* The number of items the queue can hold.  This is 1 as the receive task
-has a higher priority than the send task, so will remove items as they are added,
-meaning the send task should always find the queue empty. */
+#define BUTTON_1_GPIO_OFFSET 30
+#define BUTTON_2_GPIO_OFFSET 31
+
+#define ECLIC_INT_DEVICE_BUTTON_1 (SOC_ECLIC_INT_GPIO_BASE + BUTTON_1_GPIO_OFFSET)
+#define ECLIC_INT_DEVICE_BUTTON_2 (SOC_ECLIC_INT_GPIO_BASE + BUTTON_2_GPIO_OFFSET)
+// The real value is:
+//#define ECLIC_INT_DEVICE_BUTTON_1 49 // 30+19
+//#define ECLIC_INT_DEVICE_BUTTON_2 50 // 31+19
+
+// Since the BUTTON_1 ECLIC IRQ number is 49, and BUTTON_2 is 50, we need to overriede the irq49/50 handler 
+#define BUTTON_1_HANDLER eclic_irq49_handler
+#define BUTTON_2_HANDLER eclic_irq50_handler
+
+
 #define mainQUEUE_LENGTH                    ( 1 )
-
-//Bob: define the PIN2 here from 18 to 30
-#define PIN_2_GPIO_OFFSET 30 //18
-/*-----------------------------------------------------------*/
-
-/*
- * TODO: Implement this function for any hardware specific clock configuration
- * that was not already performed before main() was called.
- */
 static void prvSetupHardware( void );
+extern void idle_task(void);
 
-/*
- * The queue send and receive tasks as described in the comments at the top of
- * this file.
- */
-static void prvQueueReceiveTask( void *pvParameters );
-static void prvQueueSendTask( void *pvParameters );
-
-/*
- * The callback function assigned to the example software timer as described at
- * the top of this file.
- */
-static void vExampleTimerCallback( TimerHandle_t xTimer );
-
-/*
- * The event semaphore task as described at the top of this file.
- */
-static void prvEventSemaphoreTask( void *pvParameters );
-
-/*-----------------------------------------------------------*/
 
 /* The queue used by the queue send and queue receive tasks. */
 static QueueHandle_t xQueue = NULL;
 
-/* The semaphore (in this case binary) that is used by the FreeRTOS tick hook
- * function and the event semaphore task.
- */
-static SemaphoreHandle_t xEventSemaphore = NULL;
+void wait_seconds(size_t n)
+{
+  unsigned long start_mtime, delta_mtime;
 
-/* The counters used by the various examples.  The usage is described in the
- * comments at the top of this file.
- */
-static volatile uint32_t ulCountOfTimerCallbackExecutions = 0;
-static volatile uint32_t ulCountOfItemsReceivedOnQueue = 0;
-static volatile uint32_t ulCountOfReceivedSemaphores = 0;
+  // Don't start measuruing until we see an mtime tick
+  unsigned long tmp = mtime_lo();
+  do {
+    start_mtime = mtime_lo();
+  } while (start_mtime == tmp);
 
-/*-----------------------------------------------------------*/
+  do {
+    delta_mtime = mtime_lo() - start_mtime;
+  } while (delta_mtime < (n * TIMER_FREQ));
 
-// Structures for registering different interrupt handlers
-// for different parts of the application.
-typedef void (*function_ptr_t) (void);
-void no_interrupt_handler (void) {};
-//Bob: remove this because it has been already declared in bsp
-//function_ptr_t g_ext_interrupt_handlers[PLIC_NUM_INTERRUPTS];
+ // printf("-----------------Waited %d seconds.\n", n);
+}
+static void vExampleTimerCallback( TimerHandle_t xTimer );
 
-    //Bob: update this to PIC, which does not need to use this init functions
-// Instance data for the PLIC.
-//plic_instance_t g_plic;
+void config_eclic_irqs (){
+  //time_init   in port.c
+
+  eclic_enable_interrupt (ECLIC_INT_DEVICE_BUTTON_1);
+  eclic_enable_interrupt (ECLIC_INT_DEVICE_BUTTON_2);
+
+
+  eclic_set_nlbits(3);
+  //  The button have higher level
+
+  eclic_set_irq_lvl_abs(ECLIC_INT_DEVICE_BUTTON_1, 2);
+  eclic_set_irq_lvl_abs(ECLIC_INT_DEVICE_BUTTON_2, 3);
+
+  //  The MTIME using Vector-Mode
+  eclic_set_vmode(ECLIC_INT_MTIP);
+
+ } 
+
+
+void gpio_init(){
+  GPIO_REG(GPIO_INPUT_EN)    &= ~((0x1<< RED_LED_GPIO_OFFSET) | (0x1<< GREEN_LED_GPIO_OFFSET) | (0x1 << BLUE_LED_GPIO_OFFSET)) ;
+  GPIO_REG(GPIO_OUTPUT_EN)   |=  ((0x1<< RED_LED_GPIO_OFFSET)| (0x1<< GREEN_LED_GPIO_OFFSET) | (0x1 << BLUE_LED_GPIO_OFFSET)) ;
+
+  GPIO_REG(GPIO_OUTPUT_VAL)  |=   (0x1 << RED_LED_GPIO_OFFSET) ;
+  GPIO_REG(GPIO_OUTPUT_VAL)  &=  ~((0x1<< BLUE_LED_GPIO_OFFSET) | (0x1<< GREEN_LED_GPIO_OFFSET)) ;
+}
+
+
+void button_init(){
+
+    GPIO_REG(GPIO_OUTPUT_EN)  &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
+    GPIO_REG(GPIO_PULLUP_EN)  &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
+    GPIO_REG(GPIO_INPUT_EN)   |=  ((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
+    
+    GPIO_REG(GPIO_RISE_IE) |= ((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
+    GPIO_REG(GPIO_FALL_IE) &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
+    GPIO_REG(GPIO_HIGH_IE) &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
+    GPIO_REG(GPIO_LOW_IE) &= ~((0x1 << BUTTON_1_GPIO_OFFSET) | (0x1 << BUTTON_2_GPIO_OFFSET));
+
+}
+
+
+void prvSetupHardware( void )
+{
+  
+    button_init();
+
+    gpio_init();
+    
+    config_eclic_irqs();
+    
+  
+}
+TaskHandle_t StartTask_Handler;
+TaskHandle_t StartTask2_Handler;
+
+void start_task(void *pvParameters);
+void start_task2(void *pvParameters);
 
 int main(void)
 {
 
 	TimerHandle_t xExampleSoftwareTimer = NULL;
-
-
+ 
     /* Configure the system ready to run the demo.  The clock configuration
     can be done here if it was not done before main() was called. */
     prvSetupHardware();
-
-
-    /* Create the queue used by the queue send and queue receive tasks. */
+    
     xQueue = xQueueCreate(     /* The number of items the queue can hold. */
                             mainQUEUE_LENGTH,
                             /* The size of each item the queue holds. */
@@ -184,180 +214,112 @@ int main(void)
     if(xQueue == NULL)	{
     	for(;;);
     }
+    xTaskCreate((TaskFunction_t )start_task,            //ÈÎÎñº¯Êý
+                (const char*    )"start_task",          //ÈÎÎñÃû³Æ
+                (uint16_t       )521,        //ÈÎÎñ¶ÑÕ»´óÐ¡
+                (void*          )NULL,                  //´«µÝ¸øÈÎÎñº¯ÊýµÄ²ÎÊý
+                (UBaseType_t    )2,       //ÈÎÎñÓÅÏÈ¼¶
+                (TaskHandle_t*  )&StartTask_Handler);   //ÈÎÎñ¾ä±ú        
 
 
-    /* Create the queue receive task as described in the comments at the top
-    of this file. */
-    xTaskCreate(     /* The function that implements the task. */
-                    prvQueueReceiveTask,
-                    /* Text name for the task, just to help debugging. */
-                    ( const char * ) "Rx",
-                    /* The size (in words) of the stack that should be created
-                    for the task. */
-					600, /* printf requires a much deeper stack*/
-                    /* A parameter that can be passed into the task.  Not used
-                    in this simple demo. */
-                    NULL,
-                    /* The priority to assign to the task.  tskIDLE_PRIORITY
-                    (which is 0) is the lowest priority.  configMAX_PRIORITIES - 1
-                    is the highest priority. */
-                    mainQUEUE_RECEIVE_TASK_PRIORITY,
-                    /* Used to obtain a handle to the created task.  Not used in
-                    this simple demo, so set to NULL. */
-                    NULL );
+     xTaskCreate((TaskFunction_t )start_task2,            //ÈÎÎñº¯Êý
+                (const char*    )"start_task2",          //ÈÎÎñÃû³Æ
+                (uint16_t       )521,        //ÈÎÎñ¶ÑÕ»´óÐ¡
+                (void*          )NULL,                  //´«µÝ¸øÈÎÎñº¯ÊýµÄ²ÎÊý
+                (UBaseType_t    )1,       //ÈÎÎñÓÅÏÈ¼¶
+                (TaskHandle_t*  )&StartTask2_Handler); 
+ 
 
-    /* Create the queue send task in exactly the same way.  Again, this is
-    described in the comments at the top of the file. */
-    xTaskCreate(     prvQueueSendTask,
-                    ( const char * ) "TX",
-					configMINIMAL_STACK_SIZE,
-                    NULL,
-                    mainQUEUE_SEND_TASK_PRIORITY,
-                    NULL );
-
-    /* Create the semaphore used by the FreeRTOS tick hook function and the
-    event semaphore task.  NOTE: A semaphore is used for example purposes,
-    using a direct to task notification will be faster! */
-    xEventSemaphore = xSemaphoreCreateBinary();
-    if(xEventSemaphore == NULL)	{
-    	for(;;);
-    }
-
-    /* Create the task that is synchronised with an interrupt using the
-    xEventSemaphore semaphore. */
-    xTaskCreate(     prvEventSemaphoreTask,
-                    ( const char * ) "Sem",
-					configMINIMAL_STACK_SIZE,
-                    NULL,
-                    mainEVENT_SEMAPHORE_TASK_PRIORITY,
-                    NULL );
-
-
-    /* Create the software timer as described in the comments at the top of
-    this file. */
-    xExampleSoftwareTimer = xTimerCreate(     /* A text name, purely to help
-                                            debugging. */
+ 
+   xExampleSoftwareTimer = xTimerCreate(     
                                             ( const char * ) "LEDTimer",
-                                            /* The timer period, in this case
-                                            1000ms (1s). */
+                                            
                                             mainSOFTWARE_TIMER_PERIOD_MS,
-                                            /* This is a periodic timer, so
-                                            xAutoReload is set to pdTRUE. */
+                                            
                                             pdTRUE,
-                                            /* The ID is not used, so can be set
-                                            to anything. */
+                                            
                                             ( void * ) 0,
-                                            /* The callback function that switches
-                                            the LED off. */
+                                            
                                             vExampleTimerCallback
                                         );
-
-    /* Start the created timer.  A block time of zero is used as the timer
-    command queue cannot possibly be full here (this is the first timer to
-    be created, and it is not yet running). */
-    xTimerStart( xExampleSoftwareTimer, 0 );
-
-
-    printf("Before vTaskStartScheduler\n");//Bob: I added it to here to easy analysis
-    /* Start the tasks and timer running. */
+    xTimerStart( xExampleSoftwareTimer, 0 );  
+    printf("Before StartScheduler\n");//Bob: I added it to here to easy analysis
+    
     vTaskStartScheduler();
-
-    printf("Post vTaskStartScheduler\n");//Bob: I added it to here to easy analysis
-    /* If all is well, the scheduler will now be running, and the following line
-    will never be reached.  If the following line does execute, then there was
-    insufficient FreeRTOS heap memory available for the idle and/or timer tasks
-    to be created.  See the memory management section on the FreeRTOS web site
-    for more details.  */
-    for( ;; );
+   
+    printf("post   ok \n");
+  
+    for( ;; )
+    {
+       ;
+    };
 }
-/*-----------------------------------------------------------*/
+
+void start_task(void *pvParameters)
+{
+    TickType_t xNextWakeTime;
+    int x;
+    printf("task_1\n");
+    while(1)
+    {
+        printf("task1_running..... \n");
+      
+        vTaskDelay(200);
+         
+    }
+}   
+
+void start_task2(void *pvParameters)
+{
+    uint32_t ulReceivedValue;
+    printf("task_2\n");
+    /* Initialise xNextWakeTime - this only needs to be done once. */
+
+    while(1)
+    {
+        
+        printf("task2_running..... \n");
+        
+        vTaskDelay(200);
+    }
+}   
+
 
 static void vExampleTimerCallback( TimerHandle_t xTimer )
 {
     /* The timer has expired.  Count the number of times this happens.  The
     timer that calls this function is an auto re-load timer, so it will
     execute periodically. */
-    ulCountOfTimerCallbackExecutions++;
-
-    GPIO_REG(GPIO_OUTPUT_VAL)  ^=   (0x1 << BLUE_LED_GPIO_OFFSET) ;
-    write(1,"RTOS Timer Callback\n", 20);
+   
+   
+   printf("timers Callback\n");
+   
 
 }
-/*-----------------------------------------------------------*/
 
 
+void BUTTON_1_HANDLER(void) {   
 
-static void prvQueueSendTask( void *pvParameters )
-{
-TickType_t xNextWakeTime;
-const uint32_t ulValueToSend = 100UL;
+    printf ("%s","----Begin button1 handler\n");
+    GPIO_REG(GPIO_OUTPUT_VAL) ^= (0x1 << RED_LED_GPIO_OFFSET);
+    printf ("%s","----red LED off or on\n");
+    wait_seconds(5);
+    printf ("%s","----End button1 handler\n");
 
-    /* Initialise xNextWakeTime - this only needs to be done once. */
-    xNextWakeTime = xTaskGetTickCount();
+    GPIO_REG(GPIO_RISE_IP) = (0x1 << BUTTON_1_GPIO_OFFSET);  
+};
+void BUTTON_2_HANDLER(void) {
+ 
+    printf ("%s","--------Begin button2 handler\n");
+    printf ("%s","--------Higher level\n");
+    wait_seconds(5);
+    printf ("%s","--------End button2 handler\n");    
 
-    for( ;; )
-    {
-        /* Place this task in the blocked state until it is time to run again.
-        The block time is specified in ticks, the constant used converts ticks
-        to ms.  The task will not consume any CPU time while it is in the
-        Blocked state. */
-         vTaskDelayUntil( &xNextWakeTime, mainQUEUE_SEND_PERIOD_MS );
+    GPIO_REG(GPIO_RISE_IP) = (0x1 << BUTTON_2_GPIO_OFFSET);
 
-        write(1, "Sending to queue\n", 17);
-        /* Send to the queue - causing the queue receive task to unblock and
-        increment its counter.  0 is used as the block time so the sending
-        operation will not block - it shouldn't need to block as the queue
-        should always be empty at this point in the code. */
-        xQueueSend( xQueue, &ulValueToSend, 0 );
-    }
-}
-/*-----------------------------------------------------------*/
+};
 
-static void prvQueueReceiveTask( void *pvParameters )
-{
-    uint32_t ulReceivedValue;
-    char stringValue[10];
-    for( ;; )
-    {
 
-        /* Wait until something arrives in the queue - this task will block
-        indefinitely provided INCLUDE_vTaskSuspend is set to 1 in
-        FreeRTOSConfig.h. */
-        xQueueReceive( xQueue, &ulReceivedValue, portMAX_DELAY );
-
-        itoa(ulReceivedValue,stringValue, 10);
-        write(1,"Recieved: ", 10);
-        write(1,stringValue, 3);
-        write(1,"\n",1);
-
-        /*  To get here something must have been received from the queue, but
-        is it the expected value?  If it is, increment the counter. */
-        if( ulReceivedValue == 100UL )
-        {
-            /* Count the number of items that have been received correctly. */
-            ulCountOfItemsReceivedOnQueue++;
-        }
-    }
-}
-/*-----------------------------------------------------------*/
-
-static void prvEventSemaphoreTask( void *pvParameters )
-{
-    for( ;; )
-    {
-        /* Block until the semaphore is 'given'.  NOTE:
-        A semaphore is used for example purposes.  In a real application it might
-        be preferable to use a direct to task notification, which will be faster
-        and use less RAM. */
-        xSemaphoreTake( xEventSemaphore, portMAX_DELAY );
-
-        /* Count the number of times the semaphore is received. */
-        ulCountOfReceivedSemaphores++;
-
-        write(1, "Semaphore taken\n", 16);
-    }
-}
-/*-----------------------------------------------------------*/
 
 void vApplicationTickHook( void )
 {
@@ -368,27 +330,11 @@ static uint32_t ulCount = 0;
     1 in FreeRTOSConfig.h.
 
     "Give" the semaphore on every 500th tick interrupt. */
-    ulCount++;
-    if( ulCount >= 500UL )
-    {
-    	/* This function is called from an interrupt context (the RTOS tick
-        interrupt),    so only ISR safe API functions can be used (those that end
-        in "FromISR()".
+    // xSemaphoreGiveFromISR( xEventSemaphore, &xHigherPriorityTaskWoken );
+    //    ulCount = 0UL;
 
-
-        xHigherPriorityTaskWoken was initialised to pdFALSE, and will be set to
-        pdTRUE by xSemaphoreGiveFromISR() if giving the semaphore unblocked a
-        task that has equal or higher priority than the interrupted task.
-        NOTE: A semaphore is used for example purposes.  In a real application it
-        might be preferable to use a direct to task notification,
-        which will be faster and use less RAM. */
-        xSemaphoreGiveFromISR( xEventSemaphore, &xHigherPriorityTaskWoken );
-        ulCount = 0UL;
-
-    	GPIO_REG(GPIO_OUTPUT_VAL)  ^=   (0x1 << GREEN_LED_GPIO_OFFSET) ;
-    	write(1, "Giving Semaphore\n", 17);
-
-    }
+   // 	GPIO_REG(GPIO_OUTPUT_VAL)  ^=   (0x1 << GREEN_LED_GPIO_OFFSET) ;
+    	
 
     /* If xHigherPriorityTaskWoken is pdTRUE then a context switch should
     normally be performed before leaving the interrupt (because during the
@@ -420,8 +366,8 @@ void vApplicationMallocFailedHook( void )
 
 void vApplicationStackOverflowHook( TaskHandle_t xTask, signed char *pcTaskName )
 {
-    ( void ) pcTaskName;
-    ( void ) xTask;
+  //  ( void ) pcTaskName;
+   // ( void ) xTask;
 
     /* Run time stack overflow checking is performed if
     configconfigCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2.  This hook
@@ -437,142 +383,26 @@ extern UBaseType_t uxCriticalNesting;
 void vApplicationIdleHook( void )
 {
 volatile size_t xFreeStackSpace;
-
+// wait_seconds(2);
+ //printf(", the mstatus is 0x%x \n", read_csr(mstatus));
+// printf(", the mepc is 0x%x\n", read_csr(mepc));
+   // idle_task();//printf("In trap handler, the mstatus is 0x%x \n", read_csr(mstatus));
     /* The idle task hook is enabled by setting configUSE_IDLE_HOOK to 1 in
     FreeRTOSConfig.h.
 
     This function is called on each cycle of the idle task.  In this case it
     does nothing useful, other than report the amount of FreeRTOS heap that
     remains unallocated. */
-    xFreeStackSpace = xPortGetFreeHeapSize();
-
-    if( xFreeStackSpace > 100 )
-    {
+  //  xFreeStackSpace = xPortGetFreeHeapSize();
+ // printf(" the mie is 0x%x\n",(read_csr(mstatus)&MSTATUS_MIE));
+ //s printf( "idle_task\n");
+  //      eclic_enable_interrupt (CLIC_INT_TMR);
+  //  set_csr(mstatus, MSTATUS_MIE);
+   // if( xFreeStackSpace > 100 )
+   // {
         /* By now, the kernel has allocated everything it is going to, so
         if there is a lot of heap remaining unallocated then
         the value of configTOTAL_HEAP_SIZE in FreeRTOSConfig.h can be
         reduced accordingly. */
-    }
+  //  }
 }
-
-/*ISR triggered by connecting Wake and GPIO pin 2 then pressing
-the wake button */
-void wake_ISR( )    {
-    const uint32_t ulValueToSend = 555UL;
-    
-    //Bob: update to N200 board
-    //GPIO_REG(GPIO_OUTPUT_VAL)  ^=   (0x1 << RED_LED_OFFSET) ;
-    GPIO_REG(GPIO_OUTPUT_VAL)  ^=   (0x1 << RED_LED_GPIO_OFFSET) ;
-    xQueueSendFromISR( xQueue, &ulValueToSend, 0 );
-    write(1,"---------->\n",13);
-    //clear irq - interrupt pending register is write 1 to clear
-    GPIO_REG(GPIO_FALL_IP) |= (1<<PIN_2_GPIO_OFFSET);
-}
-/*-----------------------------------------------------------*/
-
-//Bob: we dont need this in N200 BSP style
-///*Entry Point for Interrupt Handler*/
-//void handle_interrupt(unsigned long mcause){
-//
-//  /* check if global*/
-//  if(((mcause & MCAUSE_CAUSE) == IRQ_M_EXT))  {
-//    plic_source int_num  = PLIC_claim_interrupt(&g_plic);
-//    g_ext_interrupt_handlers[int_num]();
-//    PLIC_complete_interrupt(&g_plic, int_num);
-//  }
-//
-//}
-
-/*-----------------------------------------------------------*/
-//enables interrupt and assigns handler
-//Bob: update this to PIC
-//void enable_interrupt(uint32_t int_num, uint32_t int_priority, function_ptr_t handler) {
-//    g_ext_interrupt_handlers[int_num] = handler;
-//    PLIC_set_priority(&g_plic, int_num, int_priority);
-//    PLIC_enable_interrupt (&g_plic, int_num);
-//}
-void enable_interrupt(uint32_t int_num, uint32_t int_priority, function_ptr_t handler) {
-    pic_interrupt_handlers[int_num] = handler;
-    pic_set_priority(int_num, int_priority);
-    pic_enable_interrupt (int_num);
-}
-/*-----------------------------------------------------------*/
-
-/*
- *enables the plic and programs handlers
-**/
-void interrupts_init(  ) {
-
-    //Bob: update this to PIC, which need to just use the global interrupt enable
-    // Disable the machine & timer interrupts until setup is done.
-    //clear_csr(mie, MIP_MEIP);
-    //clear_csr(mie, MIP_MTIP);
-    clear_csr(mstatus, MSTATUS_MIE);
-
-
-    //Bob: update this to PIC, which does not need to use this init functions
-  //setup PLIC
-  //PLIC_init(&g_plic,
-  //      PLIC_CTRL_ADDR,
-  //      PLIC_NUM_INTERRUPTS,
-  //      PLIC_NUM_PRIORITIES);
-
-    //Bob: update this to PIC
-  //assign interrupts to defaul handler
-  //for (int ii = 0; ii < PLIC_NUM_INTERRUPTS; ii ++){
-  for (int ii = 0; ii < PIC_NUM_INTERRUPTS; ii ++){
-    pic_interrupt_handlers[ii] = no_interrupt_handler;
-  }
-    //Bob: We dont need to add the MTIME handler here, because in portasm.S we have already defined MTIME_IRQ
-    //pic_interrupt_handlers[PIC_INT_TMR] = MTIME_IRQ;
-
-    //Bob: update this to PIC, which need to just use the global interrupt enable
-    // Enable the Machine-External bit in MIE
-    //set_csr(mie, MIP_MEIP);
-    set_csr(mstatus, MSTATUS_MIE);
-}
-/*-----------------------------------------------------------*/
-
-void led_init()  {
-    //Bob: update this to N200 board macro
-    //GPIO_REG(GPIO_INPUT_EN)    &= ~((0x1<< RED_LED_OFFSET) | (0x1<< GREEN_LED_OFFSET) | (0x1 << BLUE_LED_OFFSET)) ;
-    //GPIO_REG(GPIO_OUTPUT_EN)   |=  ((0x1<< RED_LED_OFFSET)| (0x1<< GREEN_LED_OFFSET) | (0x1 << BLUE_LED_OFFSET)) ;
-    //GPIO_REG(GPIO_OUTPUT_VAL)  &= ~((0x1<< RED_LED_OFFSET) | (0x1<< GREEN_LED_OFFSET) | (0x1 << BLUE_LED_OFFSET)) ;
-    GPIO_REG(GPIO_INPUT_EN)    &= ~((0x1<< RED_LED_GPIO_OFFSET) | (0x1<< GREEN_LED_GPIO_OFFSET) | (0x1 << BLUE_LED_GPIO_OFFSET)) ;
-    GPIO_REG(GPIO_OUTPUT_EN)   |=  ((0x1<< RED_LED_GPIO_OFFSET) | (0x1<< GREEN_LED_GPIO_OFFSET) | (0x1 << BLUE_LED_GPIO_OFFSET)) ;
-    GPIO_REG(GPIO_OUTPUT_VAL)  &= ~((0x1<< RED_LED_GPIO_OFFSET) | (0x1<< GREEN_LED_GPIO_OFFSET) | (0x1 << BLUE_LED_GPIO_OFFSET)) ;
-
-}
-/*-----------------------------------------------------------*/
-
-/*
-**configures the wake button for irq trigger
-**requires that the wake pin is connected to pin2
-*/
-void wake_irq_init()  {
-
-    //dissable hw io function
-    GPIO_REG(GPIO_IOF_EN )    &=  ~(1 << PIN_2_GPIO_OFFSET);
-
-    //set to input
-    GPIO_REG(GPIO_INPUT_EN)   |= (1<<PIN_2_GPIO_OFFSET);
-    GPIO_REG(GPIO_PULLUP_EN)  |= (1<<PIN_2_GPIO_OFFSET);
-
-    //set to interrupt on falling edge
-    GPIO_REG(GPIO_FALL_IE)    |= (1<<PIN_2_GPIO_OFFSET);
-
-    //Bob: update this to N200 bsp macro
-    //enable_interrupt(INT_GPIO_BASE+PIN_2_GPIO_OFFSET, 2, &wake_ISR);
-    enable_interrupt(SOC_PIC_INT_GPIO_BASE+PIN_2_GPIO_OFFSET, 2, &wake_ISR);
-
-}
-/*-----------------------------------------------------------*/
-
-
-static void prvSetupHardware( void )
-{
-    interrupts_init();
-    led_init();
-    wake_irq_init();
-}
-/*-----------------------------------------------------------*/
