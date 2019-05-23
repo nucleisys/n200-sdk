@@ -232,14 +232,6 @@
 .endm
 
 
-
-
-
-
-
-
-
-
 /* Macro for restoring task context */
 .macro popREGFILE
 

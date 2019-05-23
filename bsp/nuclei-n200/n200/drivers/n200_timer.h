@@ -18,7 +18,7 @@
 
 #define TIMER_CTRL_ADDR           SOC_TIMER_CTRL_ADDR
 #define TIMER_REG(offset)         _REG32(TIMER_CTRL_ADDR, offset)
-#define TIMER_FREQ   SOC_TIMER_FREQ
+#define TIMER_FREQ                SOC_TIMER_FREQ
 
 
 #endif

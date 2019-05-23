@@ -308,7 +308,7 @@ void vPortSetupTimer()	{
     eclic_enable_interrupt (ECLIC_INT_MTIP);
 		
     //eclic_set_nlbits(4);
-    eclic_set_irq_lvl(ECLIC_INT_MTIP,1<<4);
+    eclic_set_irq_lvl_abs(ECLIC_INT_MTIP,1);
     //set_csr(mstatus, MSTATUS_MIE);
 }
 /*-----------------------------------------------------------*/
