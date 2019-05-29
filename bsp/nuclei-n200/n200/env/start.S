@@ -1,7 +1,5 @@
 // See LICENSE for license details.
 
-// See LICENSE for license details.
-
 #include "n200/drivers/riscv_encoding.h"
 
 	.section .init
@@ -9,23 +7,23 @@
 	.globl _start
 	.type _start,@function
 _start:
-
-    /* Set the the NMI base to share with mtvec by setting CSR_MMISC_CTL */
-    li t0, (0x1 << 9);
-    csrs CSR_MMISC_CTL, t0
+	csrc CSR_MSTATUS, MSTATUS_MIE
+    	/* Set the the NMI base to share with mtvec by setting CSR_MMISC_CTL */
+    	li t0, (0x1 << 9);
+    	csrs CSR_MMISC_CTL, t0
 
 	/* Intial the mtvt*/
-    la t0, vector_base
-    csrw CSR_MTVT, t0
+    	la t0, vector_base
+    	csrw CSR_MTVT, t0
 
 	/* Intial the mtvt2 and enable it*/
-    la t0, irq_entry
-    csrw CSR_MTVT2, t0
-    csrs CSR_MTVT2, 0x1
+    	la t0, irq_entry
+    	csrw CSR_MTVT2, t0
+    	csrs CSR_MTVT2, 0x1
 
-    /* Intial the CSR MTVEC for the Trap ane NMI base addr*/
-    la t0, trap_entry
-    csrw CSR_MTVEC, t0
+    	/* Intial the CSR MTVEC for the Trap ane NMI base addr*/
+    	la t0, trap_entry
+    	csrw CSR_MTVEC, t0
 
 
 #ifdef __riscv_flen
@@ -35,16 +33,16 @@ _start:
 	csrw fcsr, x0   
 #endif
 
-    .option push
-    .option norelax
+    	.option push
+    	.option norelax
 	la gp, __global_pointer$
-    .option pop
+    	.option pop
 	la sp, _sp
 
 	/* Bob: Load code section from flash to ILM */
 	la a0, _ilm_lma
 	la a1, _ilm
-    beq a0, a1, 2f  /*If the ILM phy-address same as the logic-address, then quit*/
+        beq a0, a1, 2f  /*If the ILM phy-address same as the logic-address, then quit*/
 	la a2, _eilm
 	bgeu a1, a2, 2f
 1:
@@ -77,7 +75,8 @@ _start:
 	addi a0, a0, 4
 	bltu a0, a1, 1b
 2:
-
+	/*enable mcycle_minstret*/
+        csrci CSR_MCOUNTINHIBIT, 0x5
 	/* Call global constructors */
 	la a0, __libc_fini_array
 	call atexit
@@ -95,19 +94,19 @@ _start:
 
 	.global disable_mcycle_minstret
 disable_mcycle_minstret:
-    csrsi CSR_MCOUNTINHIBIT, 0x5
+        csrsi CSR_MCOUNTINHIBIT, 0x5
 	ret
 
 	.global enable_mcycle_minstret
 enable_mcycle_minstret:
-    csrci CSR_MCOUNTINHIBIT, 0x5
+        csrci CSR_MCOUNTINHIBIT, 0x5
 	ret
 
 	.global core_wfe
 core_wfe:
-    csrc CSR_MSTATUS, MSTATUS_MIE
-    csrs CSR_WFE, 0x1
-    wfi
-    csrc CSR_WFE, 0x1
-    csrs CSR_MSTATUS, MSTATUS_MIE
+    	csrc CSR_MSTATUS, MSTATUS_MIE
+    	csrs CSR_WFE, 0x1
+    	wfi
+    	csrc CSR_WFE, 0x1
+    	csrs CSR_MSTATUS, MSTATUS_MIE
 	ret
