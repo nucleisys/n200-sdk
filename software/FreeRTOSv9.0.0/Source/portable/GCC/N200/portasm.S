@@ -118,6 +118,7 @@
 	STORE	x13, 13 * REGBYTES(sp)
 	STORE	x14, 14 * REGBYTES(sp)
 	STORE	x15, 15 * REGBYTES(sp)
+#ifndef __riscv_32e
 	STORE	x16, 16 * REGBYTES(sp)
 	STORE	x17, 17 * REGBYTES(sp)
 	STORE	x18, 18 * REGBYTES(sp)
@@ -134,7 +135,7 @@
 	STORE	x29, 29 * REGBYTES(sp)
 	STORE	x30, 30 * REGBYTES(sp)
 	STORE	x31, 31 * REGBYTES(sp)
-	
+#endif
 .endm
 
 .macro pushREGFILE_Caller
@@ -157,6 +158,7 @@
 	STORE	x13, 13 * REGBYTES(sp)
 	STORE	x14, 14 * REGBYTES(sp)
 	STORE	x15, 15 * REGBYTES(sp)
+#ifndef  __riscv_32e
 	STORE	x16, 16 * REGBYTES(sp)
 	STORE	x17, 17 * REGBYTES(sp)
 	//STORE	x18, 18 * REGBYTES(sp)
@@ -173,7 +175,7 @@
 	STORE	x29, 29 * REGBYTES(sp)
 	STORE	x30, 30 * REGBYTES(sp)
 	STORE	x31, 31 * REGBYTES(sp)
-	
+	#endif
 .endm
 
 /* Macro for saving task context */
@@ -197,6 +199,7 @@
 	//STORE	x15, 15 * REGBYTES(sp)
 	//STORE	x16, 16 * REGBYTES(sp)
 	//STORE	x17, 17 * REGBYTES(sp)
+#ifndef __riscv_32e
 	STORE	x18, 18 * REGBYTES(sp)
 	STORE	x19, 19 * REGBYTES(sp)
 	STORE	x20, 20 * REGBYTES(sp)
@@ -211,7 +214,7 @@
 	//STORE	x29, 29 * REGBYTES(sp)
 	//STORE	x30, 30 * REGBYTES(sp)
 	//STORE	x31, 31 * REGBYTES(sp)
-	
+#endif
 .endm
 
 
@@ -251,6 +254,7 @@
 	LOAD	x13, 13 * REGBYTES(sp)
 	LOAD	x14, 14 * REGBYTES(sp)
 	LOAD	x15, 15 * REGBYTES(sp)
+#ifndef __riscv_32e
 	LOAD	x16, 16 * REGBYTES(sp)
 	LOAD	x17, 17 * REGBYTES(sp)
 	LOAD	x18, 18 * REGBYTES(sp)
@@ -267,7 +271,7 @@
 	LOAD	x29, 29 * REGBYTES(sp)
 	LOAD	x30, 30 * REGBYTES(sp)
 	LOAD	x31, 31 * REGBYTES(sp)
-
+#endif
 	addi	sp, sp, REGBYTES * 36
 .endm
 
@@ -289,6 +293,7 @@
 	LOAD	x13, 13 * REGBYTES(sp)
 	LOAD	x14, 14 * REGBYTES(sp)
 	LOAD	x15, 15 * REGBYTES(sp)
+#ifndef __riscv_32e
 	LOAD	x16, 16 * REGBYTES(sp)
 	LOAD	x17, 17 * REGBYTES(sp)
 	//LOAD	x18, 18 * REGBYTES(sp)
@@ -305,7 +310,7 @@
 	LOAD	x29, 29 * REGBYTES(sp)
 	LOAD	x30, 30 * REGBYTES(sp)
 	LOAD	x31, 31 * REGBYTES(sp)
-
+#endif
 	addi	sp, sp, REGBYTES * 36
 .endm
 ###############################################

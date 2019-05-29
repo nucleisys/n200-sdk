@@ -33,12 +33,14 @@
   STORE x13, 7*REGBYTES(sp)
   STORE x14, 8*REGBYTES(sp)
   STORE x15, 9*REGBYTES(sp)
+#ifndef __riscv_32e
   STORE x16, 10*REGBYTES(sp)
   STORE x17, 11*REGBYTES(sp)
   STORE x28, 12*REGBYTES(sp)
   STORE x29, 13*REGBYTES(sp)
   STORE x30, 14*REGBYTES(sp)
   STORE x31, 15*REGBYTES(sp)
+#endif
 .endm
 
 
@@ -56,12 +58,14 @@
   LOAD x13, 7*REGBYTES(sp)
   LOAD x14, 8*REGBYTES(sp)
   LOAD x15, 9*REGBYTES(sp)
+#ifndef __riscv_32e
   LOAD x16, 10*REGBYTES(sp)
   LOAD x17, 11*REGBYTES(sp)
   LOAD x28, 12*REGBYTES(sp)
   LOAD x29, 13*REGBYTES(sp)
   LOAD x30, 14*REGBYTES(sp)
   LOAD x31, 15*REGBYTES(sp)
+#endif
 
 .endm
 
@@ -78,13 +82,14 @@
   LOAD x13, 7*REGBYTES(sp)
   LOAD x14, 8*REGBYTES(sp)
   LOAD x15, 9*REGBYTES(sp)
+#ifndef __riscv_32e
   LOAD x16, 10*REGBYTES(sp)
   LOAD x17, 11*REGBYTES(sp)
   LOAD x28, 12*REGBYTES(sp)
   LOAD x29, 13*REGBYTES(sp)
   LOAD x30, 14*REGBYTES(sp)
   LOAD x31, 15*REGBYTES(sp)
-
+#endif
 .endm
 
 ###############################################

@@ -23,8 +23,11 @@ HBIRD  := hbird
 OLMX   := olmx
 
 N201        := n201
+N201E       := n201e
 N203        := n203
+N203E       := n203e
 N205        := n205
+N205E       := n205e
 N205F       := n205f
 N205FD      := n205fd
 
@@ -41,14 +44,30 @@ RISCV_ARCH := rv32iac
 RISCV_ABI  := ilp32
 endif
 
+ifeq ($(core_name),${N201E}) 
+RISCV_ARCH := rv32eac
+RISCV_ABI  := ilp32e
+endif
+
 ifeq ($(core_name),${N203}) 
 RISCV_ARCH := rv32imac
 RISCV_ABI  := ilp32
 endif
 
+ifeq ($(core_name),${N203E}) 
+RISCV_ARCH := rv32emac
+RISCV_ABI  := ilp32e
+endif
+
+
 ifeq ($(core_name),${N205}) 
 RISCV_ARCH := rv32imac
 RISCV_ABI  := ilp32
+endif
+
+ifeq ($(core_name),${N205E}) 
+RISCV_ARCH := rv32emac
+RISCV_ABI  := ilp32e
 endif
 
 ifeq ($(core_name),${N207F}) 
