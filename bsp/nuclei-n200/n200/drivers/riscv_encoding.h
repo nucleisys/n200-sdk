@@ -176,6 +176,17 @@
 
 #ifdef __GNUC__
 
+#define read_fpu(reg) ({ unsigned long __tmp; \
+  asm volatile ("fmv.x.w %0, " #reg : "=r"(__tmp)); \
+  __tmp; })
+
+#define write_fpu(reg, val) ({ \
+  if (__builtin_constant_p(val) && (unsigned long)(val) < 32) \
+    asm volatile ("fmv.w.x " #reg ", %0" :: "i"(val)); \
+  else \
+    asm volatile ("fmv.w.x " #reg ", %0" :: "r"(val)); })
+    
+
 #define read_csr(reg) ({ unsigned long __tmp; \
   asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
   __tmp; })

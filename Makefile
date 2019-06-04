@@ -28,8 +28,9 @@ N203        := n203
 N203E       := n203e
 N205        := n205
 N205E       := n205e
-N205F       := n205f
-N205FD      := n205fd
+N207        := n207
+N207F       := n207f
+N207FD      := n207fd
 
 CORE        := n205
 
@@ -70,6 +71,11 @@ RISCV_ARCH := rv32emac
 RISCV_ABI  := ilp32e
 endif
 
+ifeq ($(core_name),${N207}) 
+RISCV_ARCH := rv32imac
+RISCV_ABI  := ilp32
+endif
+
 ifeq ($(core_name),${N207F}) 
 RISCV_ARCH := rv32imafc
 RISCV_ABI  := ilp32f
@@ -77,7 +83,7 @@ endif
 
 ifeq ($(core_name),${N207FD}) 
 RISCV_ARCH := rv32imafdc
-RISCV_ABI  := ilp32f
+RISCV_ABI  := ilp32d
 endif
 
 
