@@ -1,5 +1,5 @@
 TARGET = demo_iasm
-CFLAGS += -O2
+CFLAGS += -Os
 
 BSP_BASE = ../../bsp
 

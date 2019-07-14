@@ -35,15 +35,8 @@ C_SRCS += $(N200_ENV_DIR)/handlers.c
    # The processor core common functions
 C_SRCS += $(N200_DRIVER_DIR)/n200_func.c
    # The newlib stubs functions
-C_SRCS += $(N200_STUB_DIR)/_exit.c
-C_SRCS += $(N200_STUB_DIR)/write_hex.c
 C_SRCS += $(N200_STUB_DIR)/write.c
-C_SRCS += $(N200_STUB_DIR)/close.c
-C_SRCS += $(N200_STUB_DIR)/fstat.c
-C_SRCS += $(N200_STUB_DIR)/isatty.c
-C_SRCS += $(N200_STUB_DIR)/lseek.c
-C_SRCS += $(N200_STUB_DIR)/read.c
-C_SRCS += $(N200_STUB_DIR)/sbrk.c
+
 
    # The SoC common functions
 C_SRCS += $(SOC_DRIVER_DIR)/soc_func.c
@@ -70,14 +63,11 @@ LDFLAGS += -T $(LINKER_SCRIPT)  -nostartfiles -Wl,--gc-sections  -Wl,--check-sec
 LDFLAGS += --specs=nano.specs --specs=nosys.specs
 
 ifeq ($(PFLOAT),1) 
-ifeq ($(YOUR_PRINTF),0) 
+ifeq ($(YOUR_PRINTF),0)
 LDFLAGS += -u _printf_float 
 endif
 endif
 
-ifeq ($(YOUR_PRINTF),1) 
-LDFLAGS +=  -Wl,--wrap=printf 
-endif
 
 LDFLAGS += -L$(N200_ENV_DIR)
 
@@ -94,7 +84,7 @@ CLEAN_OBJS += $(TARGET) $(LINK_OBJS) $(DUMP_OBJS) $(VERILOG_OBJS)
 CFLAGS += -g
 CFLAGS += -march=$(RISCV_ARCH)
 CFLAGS += -mabi=$(RISCV_ABI)
-CFLAGS += -mcmodel=medany
+CFLAGS += -mcmodel=medlow 
 CFLAGS += -ffunction-sections -fdata-sections -fno-common
 ifeq ($(SIMULATION),1) 
 CFLAGS += -DCFG_SIMULATION

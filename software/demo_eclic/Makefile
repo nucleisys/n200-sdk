@@ -1,5 +1,5 @@
 TARGET = demo_eclic
-CFLAGS += -O2
+CFLAGS += -Os -msave-restore  -fno-unroll-loops -flto
 
 BSP_BASE = ../../bsp
 
