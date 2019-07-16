@@ -36,6 +36,7 @@ C_SRCS += $(N200_ENV_DIR)/handlers.c
 C_SRCS += $(N200_DRIVER_DIR)/n200_func.c
    # The newlib stubs functions
 C_SRCS += $(N200_STUB_DIR)/write.c
+C_SRCS += $(N200_STUB_DIR)/isatty.c
 
 
    # The SoC common functions
