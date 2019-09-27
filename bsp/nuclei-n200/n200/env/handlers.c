@@ -15,7 +15,7 @@ __attribute__((weak)) uintptr_t handle_nmi()
 
 __attribute__((weak)) uintptr_t handle_trap(uintptr_t mcause, uintptr_t sp)
 {
-  if(mcause == 0xFFF) {
+  if((mcause&0xFFF) == 0xFFF) {
       handle_nmi;
   }
   write(1, "trap\n", 5);
