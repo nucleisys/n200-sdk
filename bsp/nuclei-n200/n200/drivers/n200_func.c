@@ -342,7 +342,7 @@ void eclic_set_negedge_trig(uint32_t source) {
       // Keep other bits unchanged and only set the bit 1
   uint8_t new_intattr = (old_intattr | 0x2);
       // Keep other bits unchanged and only set the bit 2
-  new_intattr = (old_intattr | 0x4);
+  new_intattr = (new_intattr | 0x4);
 
   eclic_set_intattr(source,new_intattr);
 }
